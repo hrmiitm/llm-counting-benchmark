@@ -1,0 +1,25 @@
+# Credentials (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Python and local tooling
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.uv/
+
+# Generated benchmark results
+eval/
+
+# Full downloaded dataset; keep the curated data/group*/ samples
+FSC147_384_V2/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
