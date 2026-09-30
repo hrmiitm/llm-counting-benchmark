@@ -32,7 +32,7 @@ thead th:first-child { z-index: 2; }
 .image-link img { display: block; width: 86px; height: 64px; object-fit: cover; border-radius: 5px; margin: 0 auto 10px; background: #f1f4f4; }
 .image-link:hover { color: #075bc4; text-decoration: underline; }
 small { display: block; font-size: 14px; color: #667980; font-weight: 400; margin-top: 5px; }
-.provider th { text-align: left; color: #fff; background: #0866d9; padding: 9px 20px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
+.provider th { text-align: left; color: #fff; background: #0866d9; padding: 1px 20px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
 .model { font-weight: 600; overflow-wrap: anywhere; }
 td { font-size: 18px; font-variant-numeric: tabular-nums; }
 td.exact { background: #80edb2; color: #064c2c; } td.under { background: #ffdb70; color: #603c00; } td.over { background: #d3b1ff; color: #431979; }
