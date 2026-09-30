@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
 from dotenv import load_dotenv
-
+from time import sleep
 load_dotenv()
 
-from count_image import count_image
+from count_image2 import count_image
 
 
 def evaluate(groups_to_evalutes, model, model_temp=0, data_path="data", output_path="eval"):
@@ -18,6 +18,7 @@ def evaluate(groups_to_evalutes, model, model_temp=0, data_path="data", output_p
         for index, item in enumerate(metadata, 1):
             print(f"{model} | {group_name} [{index}/{len(metadata)}] {item['image']} ...", flush=True)
             model_count = count_image(model, group_dir / item["image"], item["label"], model_temp)
+            sleep(15)
             results.append({**item, "model": model, "model_temp": model_temp, "model_count": model_count})
             print(f"  count: {model_count}", flush=True)
 
@@ -29,6 +30,8 @@ def evaluate(groups_to_evalutes, model, model_temp=0, data_path="data", output_p
 
 if __name__ == "__main__":
     models = [
+        # "anthropic/claude-opus-5.5",
+        # "anthropic/claude-sonnet-5.5",
         # "openai/gpt-5.6-luna",
         # "openai/gpt-5.6-terra",
         # "google/gemini-3.8-flash",
@@ -36,10 +39,10 @@ if __name__ == "__main__":
         # "qwen/qwen3.7-flash",
         # "qwen/qwen3.8-flash",
         # "openai/gpt-5.6-sol",
+        # "openai/gpt-6.1-sol",
         # "anthropic/claude-haiku-4.5",
-        # "anthropic/claude-sonnet-5.5",
-        # "anthropic/claude-fable-5.1",
-        # "openai/gpt-6-astra",
+        "openai/gpt-6-astra",
+        "anthropic/claude-fable-5.1",
     ]
     for model in models:
-        evaluate(["group1", "group2"], model)
+        evaluate(["group1"], model)

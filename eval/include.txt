@@ -4,3 +4,7 @@ openai_group1_eval.json
 openai_group2_eval.json
 sonnet_group1_eval.json
 sonnet_group2_eval.json
+haiku_group1_eval.json
+haiku_group2_eval.json
+opus_group1_eval.json
+sol_group1_eval.json

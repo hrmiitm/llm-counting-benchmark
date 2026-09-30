@@ -39,7 +39,10 @@ function organize(sources, warnings) {
   return groups;
 }
 // Fixed domain across both tables: 0% green, 50% yellow, 100%+ red.
-const errorColor = value => d3.interpolateRdYlGn(1 - Math.min(1, Math.max(0, value)));
+// Blend slightly toward a light neutral to soften saturation and dark extremes.
+const errorColor = value => d3.interpolateRgb(
+  d3.interpolateRdYlGn(1 - Math.min(1, Math.max(0, value))), '#f2f4f7',
+)(0.18);
 function shade(node, value) {
   if (value === null) return;
   const color = d3.rgb(errorColor(value));

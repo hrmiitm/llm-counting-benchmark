@@ -19,10 +19,30 @@ def count_image(model, image, label, temperature=0) -> int:
     payload = {
         "model": model,
         "temperature": temperature,
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "object_count",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": f"Number of {label} visible in the image.",
+                        },
+                    },
+                    "required": ["count"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "provider": {"require_parameters": True},
         "messages": [{
             "role": "user",
             "content": [
-                {"type": "text", "text": f"Count the {label} in this image. Reply with only an integer."},
+                {"type": "text", "text": f"Count the {label} in this image. You will always answer with an integer. In case you are not sure you can guess but you will always output an intger."},
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}},
             ],
         }],
@@ -42,4 +62,11 @@ def count_image(model, image, label, temperature=0) -> int:
     except HTTPError as error:
         detail = error.read().decode(errors="replace")
         raise RuntimeError(f"API error {error.code}: {detail}") from error
-    return int(answer.strip())
+
+    try:
+        count = json.loads(answer)["count"]
+    except (json.JSONDecodeError, KeyError, TypeError) as error:
+        raise ValueError(f"Model returned an invalid structured response: {answer!r}") from error
+    if type(count) is not int or count < 0:
+        raise ValueError(f"Model returned an invalid count: {count!r}")
+    return count

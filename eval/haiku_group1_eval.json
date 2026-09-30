@@ -5,9 +5,9 @@
     "image": "813.jpg",
     "label": "bottle caps",
     "actual-count": 185,
-    "model": "anthropic/claude-sonnet-5.5",
+    "model": "anthropic/claude-haiku-4.5",
     "model_temp": 0,
-    "model_count": 330
+    "model_count": 127
   },
   {
     "group": "1",
@@ -15,9 +15,9 @@
     "image": "869.jpg",
     "label": "books",
     "actual-count": 250,
-    "model": "anthropic/claude-sonnet-5.5",
+    "model": "anthropic/claude-haiku-4.5",
     "model_temp": 0,
-    "model_count": 300
+    "model_count": 247
   },
   {
     "group": "1",
@@ -25,9 +25,9 @@
     "image": "1084.jpg",
     "label": "buffaloes",
     "actual-count": 198,
-    "model": "anthropic/claude-sonnet-5.5",
+    "model": "anthropic/claude-haiku-4.5",
     "model_temp": 0,
-    "model_count": 300
+    "model_count": 87
   },
   {
     "group": "1",
@@ -35,9 +35,9 @@
     "image": "2373.jpg",
     "label": "bricks",
     "actual-count": 130,
-    "model": "anthropic/claude-sonnet-5.5",
+    "model": "anthropic/claude-haiku-4.5",
     "model_temp": 0,
-    "model_count": 280
+    "model_count": 48
   },
   {
     "group": "1",
@@ -45,9 +45,9 @@
     "image": "2648.jpg",
     "label": "cement bags",
     "actual-count": 91,
-    "model": "anthropic/claude-sonnet-5.5",
+    "model": "anthropic/claude-haiku-4.5",
     "model_temp": 0,
-    "model_count": 75
+    "model_count": 156
   },
   {
     "group": "1",
@@ -55,8 +55,8 @@
     "image": "2933.jpg",
     "label": "stamps",
     "actual-count": 45,
-    "model": "anthropic/claude-sonnet-5.5",
+    "model": "anthropic/claude-haiku-4.5",
     "model_temp": 0,
-    "model_count": 45
+    "model_count": 56
   }
 ]
