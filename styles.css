@@ -7,22 +7,22 @@ a { color: #075bc4; text-underline-offset: 3px; }
 h1 { font-size: clamp(36px, 5vw, 60px); letter-spacing: -.05em; line-height: 1.1; margin: 14px 0; }
 .subtitle { max-width: 650px; color: #5c6e74; font-size: 18px; line-height: 1.6; }
 .summary { display: flex; flex-wrap: wrap; gap: 10px; margin: 26px 0 36px; }
-.summary span { border: 1px solid #d7e1e2; border-radius: 6px; background: white; padding: 8px 14px; font-size: 13px; }
-.guide { display: flex; flex-wrap: wrap; gap: 20px; color: #52676e; font-size: 13px; }
+.summary span { border: 1px solid #d7e1e2; border-radius: 6px; background: white; padding: 8px 14px; font-size: 15px; }
+.guide { display: flex; flex-wrap: wrap; gap: 20px; color: #52676e; font-size: 15px; }
 .guide span { display: inline-flex; align-items: center; gap: 7px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; }
 .dot.exact { background: #00b86b; } .dot.under { background: #ffad00; } .dot.over { background: #9254ff; }
-.method { font-size: 13px; color: #5c6e74; line-height: 1.7; margin-bottom: 32px; }
+.method { font-size: 15px; color: #5c6e74; line-height: 1.7; margin-bottom: 32px; }
 section { margin-bottom: 38px; }
-.section-heading { display: flex; align-items: baseline; gap: 16px; }
+.section-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 16px; }
 h2 { font-size: 25px; letter-spacing: -.03em; margin: 0 0 16px; }
-.section-heading p { font-size: 13px; color: #63757b; }
-fieldset { display: flex; gap: 20px; flex-wrap: wrap; border: 0; padding: 0; margin: 0 0 16px; font-size: 13px; }
+.section-heading p { font-size: 15px; color: #63757b; }
+fieldset { display: flex; gap: 20px; flex-wrap: wrap; border: 0; padding: 0; margin: 0 0 16px; font-size: 15px; }
 legend { float: left; margin-right: 20px; font-weight: 650; }
 label { cursor: pointer; display: flex; align-items: center; gap: 6px; }
 input { accent-color: #075bc4; width: 15px; height: 15px; }
 .table-wrap { overflow-x: auto; border: 1px solid #d9e2e4; border-radius: 10px; background: white; }
-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; text-align: center; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; text-align: center; }
 caption { text-align: left; padding: 12px 18px; color: #62757c; background: #fafcfc; border-bottom: 1px solid #e1e8e9; }
 th, td { padding: 16px 12px; border-bottom: 1px solid #e5ebec; }
 thead th { vertical-align: bottom; min-width: 126px; font-weight: 650; }
@@ -31,14 +31,14 @@ thead th:first-child { z-index: 2; }
 .image-link { display: block; text-decoration: none; color: inherit; }
 .image-link img { display: block; width: 86px; height: 64px; object-fit: cover; border-radius: 5px; margin: 0 auto 10px; background: #f1f4f4; }
 .image-link:hover { color: #075bc4; text-decoration: underline; }
-small { display: block; font-size: 11px; color: #667980; font-weight: 400; margin-top: 5px; }
+small { display: block; font-size: 14px; color: #667980; font-weight: 400; margin-top: 5px; }
 .provider th { text-align: left; color: #fff; background: #0866d9; padding: 9px 20px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
 .model { font-weight: 600; overflow-wrap: anywhere; }
-td { font-variant-numeric: tabular-nums; }
+td { font-size: 18px; font-variant-numeric: tabular-nums; }
 td.exact { background: #80edb2; color: #064c2c; } td.under { background: #ffdb70; color: #603c00; } td.over { background: #d3b1ff; color: #431979; }
-.metric { display: block; line-height: 1.7; white-space: nowrap; }
-.metric + .metric { font-size: 11px; }
-.accuracy, .normalized { font-size: 17px; font-weight: 700; min-width: 110px; }
+.metric { display: block; font-size: 18px; font-weight: 600; line-height: 1.7; white-space: nowrap; }
+.metric + .metric { font-size: 16px; }
+.accuracy, .normalized { font-size: 23px; font-weight: 700; min-width: 110px; }
 tbody:last-child tr:last-child > * { border-bottom: 0; }
 #errors { background: #fff2df; border: 1px solid #e4bd7a; border-radius: 6px; padding: 16px; margin-bottom: 24px; font-size: 14px; white-space: pre-line; }
 .empty { padding: 24px; background: white; border-radius: 8px; }
