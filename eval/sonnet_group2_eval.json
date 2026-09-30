@@ -1,0 +1,62 @@
+[
+  {
+    "group": "2",
+    "id": "1",
+    "image": "65.jpg",
+    "label": "tomatoes",
+    "actual-count": 29,
+    "model": "anthropic/claude-haiku-4.5",
+    "model_temp": 0,
+    "model_count": 24
+  },
+  {
+    "group": "2",
+    "id": "2",
+    "image": "213.jpg",
+    "label": "balls",
+    "actual-count": 169,
+    "model": "anthropic/claude-haiku-4.5",
+    "model_temp": 0,
+    "model_count": 169
+  },
+  {
+    "group": "2",
+    "id": "3",
+    "image": "721.jpg",
+    "label": "windows",
+    "actual-count": 12,
+    "model": "anthropic/claude-haiku-4.5",
+    "model_temp": 0,
+    "model_count": 12
+  },
+  {
+    "group": "2",
+    "id": "4",
+    "image": "733.jpg",
+    "label": "cassettes",
+    "actual-count": 15,
+    "model": "anthropic/claude-haiku-4.5",
+    "model_temp": 0,
+    "model_count": 14
+  },
+  {
+    "group": "2",
+    "id": "5",
+    "image": "741.jpg",
+    "label": "ants",
+    "actual-count": 13,
+    "model": "anthropic/claude-haiku-4.5",
+    "model_temp": 0,
+    "model_count": 23
+  },
+  {
+    "group": "2",
+    "id": "6",
+    "image": "2818.jpg",
+    "label": "chairs",
+    "actual-count": 252,
+    "model": "anthropic/claude-haiku-4.5",
+    "model_temp": 0,
+    "model_count": 247
+  }
+]

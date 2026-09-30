@@ -2,3 +2,5 @@ google_group1_eval.json
 google_group2_eval.json
 openai_group1_eval.json
 openai_group2_eval.json
+sonnet_group1_eval.json
+sonnet_group2_eval.json

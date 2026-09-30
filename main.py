@@ -33,10 +33,11 @@ if __name__ == "__main__":
         # "openai/gpt-5.6-terra",
         # "google/gemini-3.8-flash",
         # "google/gemini-3.1-flash-lite",
-        "qwen/qwen3.7-flash",
-        "qwen/qwen3.8-flash",
+        # "qwen/qwen3.7-flash",
+        # "qwen/qwen3.8-flash",
         # "openai/gpt-5.6-sol",
         # "anthropic/claude-haiku-4.5",
+        # "anthropic/claude-sonnet-5.5",
         # "anthropic/claude-fable-5.1",
         # "openai/gpt-6-astra",
     ]
