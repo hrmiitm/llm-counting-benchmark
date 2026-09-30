@@ -95,15 +95,27 @@ function renderGroup(id, group) {
   const wrap = el('div', undefined, 'table-wrap'); wrap.tabIndex = 0;
   wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', `Group ${id} results, scroll horizontally for all images`);
   section.append(controls, sorting, wrap);
+  function directionButtons(axis, key, label, activeDirection, onSort) {
+    const buttons = el('div', undefined, 'sort-directions');
+    for (const [direction, text] of [['asc', '↑ Asc'], ['desc', '↓ Desc']]) {
+      const button = el('button', text, 'direction-button'); button.type = 'button';
+      button.dataset.axis = axis; button.dataset.key = key; button.dataset.direction = direction;
+      button.setAttribute('aria-label', `Sort ${axis === 'column' ? 'models' : 'images'} by ${label}, ${direction === 'asc' ? 'ascending' : 'descending'}`);
+      button.setAttribute('aria-pressed', String(activeDirection === direction));
+      button.addEventListener('click', () => {
+        onSort(direction); draw();
+        [...wrap.querySelectorAll('.direction-button')].find(node => node.dataset.axis === axis && node.dataset.key === String(key) && node.dataset.direction === direction)?.focus({ preventScroll: true });
+      });
+      buttons.append(button);
+    }
+    return buttons;
+  }
   function sortHeader(text, key) {
     const th = el('th'); th.scope = 'col'; th.setAttribute('aria-sort', sortKey === key ? ascending ? 'ascending' : 'descending' : 'none');
-    const button = el('button', `${text} ${sortKey === key ? ascending ? '↑' : '↓' : '↕'}`, 'sort-button');
-    button.type = 'button'; button.dataset.sort = key;
-    button.addEventListener('click', () => {
-      ascending = sortKey === key ? !ascending : true; sortKey = key; draw();
-      [...wrap.querySelectorAll('.sort-button')].find(node => node.dataset.sort === key)?.focus({ preventScroll: true });
-    });
-    th.append(button); return th;
+    th.append(el('span', text, 'column-title'), directionButtons('column', key, text,
+      sortKey === key ? ascending ? 'asc' : 'desc' : null,
+      direction => { sortKey = key; ascending = direction === 'asc'; }));
+    return th;
   }
   function draw() {
     modelLabel.hidden = !columns.value.startsWith('row');
@@ -118,7 +130,7 @@ function renderGroup(id, group) {
       return order(value(a), value(b), ascending) || compare(a.name, b.name) || compare(a.temperature, b.temperature);
     });
     const table = el('table');
-    table.append(el('caption', `Group ${id} · Click a column heading to sort models${grouped.checked ? ' within each provider' : ''}. Image columns sort by absolute percentage deviation.`));
+    table.append(el('caption', `Group ${id} · Column buttons sort models${grouped.checked ? ' within each provider' : ''}. Row buttons sort images by that model’s percentage deviation.`));
     const thead = el('thead'); const head = el('tr'); head.append(sortHeader('Model', 'model'));
     for (const item of orderedImages) {
       const th = sortHeader(item.label || item.image, item.image);
@@ -141,7 +153,12 @@ function renderGroup(id, group) {
       }
       for (const model of batch) {
         const tr = el('tr'); const name = el('th', model.name, 'model'); name.scope = 'row';
-        name.append(el('small', `${model.provider} · Temperature ${model.temperature ?? '—'}`)); tr.append(name);
+        name.append(el('small', `${model.provider} · Temperature ${model.temperature ?? '—'}`));
+        const modelIndex = models.indexOf(model);
+        name.append(directionButtons('row', modelIndex, `${model.name} (temperature ${model.temperature ?? 'unspecified'})`,
+          columns.value.startsWith('row') && Number(modelSelect.value) === modelIndex ? columns.value === 'row' ? 'asc' : 'desc' : null,
+          direction => { modelSelect.value = String(modelIndex); columns.value = direction === 'asc' ? 'row' : 'row-desc'; }));
+        tr.append(name);
         for (const item of orderedImages) {
           const row = model.predictions.get(item.image); const td = el('td'); const error = deviation(model, item);
           if (!row || !validCount(row.model_count)) { td.textContent = '—'; td.title = 'No valid prediction'; }

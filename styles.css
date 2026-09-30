@@ -68,3 +68,10 @@ select { max-width: 100%; font: inherit; padding: 6px; border: 1px solid #a8bdd7
 .color-ramp { height: 16px; border-radius: 5px; }
 .scale-labels { display: flex; justify-content: space-between; margin-top: 5px; }
 td:not([style]) { background: #edf0f4; }
+
+.column-title { display: block; color: #174f91; padding: 6px 0; }
+.sort-directions { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-top: 7px; }
+.model .sort-directions, thead th:first-child .sort-directions { justify-content: flex-start; }
+.direction-button { padding: 5px 7px; border: 1px solid #a8bdd7; border-radius: 4px; background: #fff; color: #174f91; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.direction-button:hover { background: #e0edff; }
+.direction-button[aria-pressed="true"] { background: #075bc4; border-color: #075bc4; color: white; }

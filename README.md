@@ -48,7 +48,7 @@ Each table defaults to percentage deviation and predicted/actual counts. Optiona
 
 **Normalized error** is `100 × mean(abs(predicted − actual) / actual)`. Each image contributes equally. Lower is better; 0% means perfect counts. Missing predictions and zero actual counts are excluded, with coverage shown. Values can exceed 100%.
 
-Models default to ascending normalized error across providers. Click Model, any image heading, or Normalized error to toggle ascending/descending row order; image headings sort by absolute percentage deviation. Missing values stay last. Optional provider grouping applies the chosen sort within each provider. Image-order controls reorder columns by original ID, mean error, or a selected model's error.
+Models default to ascending normalized error across providers. Use the explicit Asc/Desc buttons in each column header to sort models; use each model row’s Asc/Desc buttons to reorder images by that model’s deviation; image headings sort by absolute percentage deviation. Missing values stay last. Optional provider grouping applies the chosen sort within each provider. Image-order controls reorder columns by original ID, mean error, or a selected model's error.
 
 Cells and overall error use D3's continuous `interpolateRdYlGn`, reversed: 0% green, 50% yellow, 100%+ red. Both tables share this fixed domain; only color is clamped, not the numeric values. Foreground color adjusts for contrast. Zero-denominator and missing cells are neutral. D3 7.9.0 is served locally from `vendor/` with its license; no runtime CDN is required.
 
