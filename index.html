@@ -6,6 +6,7 @@
   <meta name="description" content="Compare vision models on object counting, image by image.">
   <title>LLM Counting Benchmark</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="vendor/d3.min.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -17,8 +18,8 @@
       <div class="summary" id="summary" aria-live="polite">Loading results…</div>
     </header>
     <div id="errors" role="alert" hidden></div>
-    <div class="guide"><span><i class="dot exact"></i> Exact count</span><span><i class="dot under"></i> Undercount</span><span><i class="dot over"></i> Overcount</span><span>— No prediction</span></div>
-    <p class="method">Accuracy = exact matches ÷ images with a valid prediction. Normalized error = mean of |predicted − actual| ÷ actual, as a percentage. Lower is better; 0% is perfect. Each image has equal weight. Missing predictions are excluded; zero actual counts are excluded from normalized error. Coverage is shown beneath each score. Click an image to inspect it.</p>
+    <div class="guide"><strong>Absolute percentage deviation · lower is better</strong><div class="color-legend"><div class="color-ramp" aria-hidden="true"></div><div class="scale-labels"><span>0% · exact</span><span>50%</span><span>100%+</span></div></div><span>— Missing · N/A when actual is zero</span></div>
+    <p class="method">Percentage deviation = |predicted − actual| ÷ actual × 100. Normalized error is the mean deviation across images, with each image weighted equally. Missing predictions and zero actual counts are excluded; coverage appears beneath the score. Colors use the same continuous scale in both tables, capped at 100%; displayed values are not capped. “Predicted / actual (%)” shows the predicted fraction of the true count: 100% is exact, above 100% is an overcount.</p>
     <div id="results" aria-live="polite"></div>
     <noscript><p>Enable JavaScript to load the benchmark results.</p></noscript>
     <footer>Results loaded from <a href="eval/include.txt">eval/include.txt</a> and its listed JSON files. Inspired by <a href="https://sanand0.github.io/llmmath/">LLM Mental Math</a>.</footer>

@@ -24,7 +24,7 @@ The API can charge for every image request. `.env` is ignored by Git. Results in
 
 ## Benchmark website
 
-The root `index.html` is a static GitHub Pages site with no build step or dependencies. It fetches `eval/include.txt`, then fetches and parses only the JSON files listed there. Results are never embedded in the HTML or JavaScript.
+The root `index.html` is a static GitHub Pages site with no build step. It fetches `eval/include.txt`, then fetches and parses only the JSON files listed there. Results are never embedded in the HTML or JavaScript.
 
 Preview locally (opening `index.html` as a file will not allow JSON fetching):
 
@@ -44,9 +44,12 @@ Each record uses the existing benchmark fields: `group`, `id`, `image`, `label`,
 
 Rows represent model/temperature combinations so runs at different temperatures remain distinguishable. If a model/temperature/image appears more than once, the last record in manifest order wins. Conflicting actual counts are reported and skipped. Missing or malformed files produce a visible warning while valid files still render.
 
-Each table has independent checkboxes for predicted/actual, predicted count, and difference (**actual − predicted**). Multiple displays can be enabled together. Green means exact, amber undercount, and purple overcount. **Accuracy is exact matches divided by images with valid predictions**, with prediction coverage shown separately. Missing, null, or invalid predictions display `—` and do not enter the accuracy denominator. Counts must be nonnegative JSON numbers.
+Each table defaults to percentage deviation and predicted/actual counts. Optional displays include predicted/actual as a percentage (100% means exact, above 100% means overcount), raw predicted count, and actual minus predicted. Exact-match accuracy has been removed.
 
+**Normalized error** is `100 × mean(abs(predicted − actual) / actual)`. Each image contributes equally. Lower is better; 0% means perfect counts. Missing predictions and zero actual counts are excluded, with coverage shown. Values can exceed 100%.
 
-**Normalized error** is mean absolute percentage error: `100 × mean(abs(predicted − actual) / actual)`. Each image contributes equally, so a miss of 10 on an actual count of 20 matters more than a miss of 10 on 200. Lower is better; 0% means perfect counts. The metric can exceed 100% for large overcounts. Missing predictions and zero actual counts are excluded, with the contributing image count shown in the column. Exact-match accuracy still includes valid predictions for zero actual counts.
+Models default to ascending normalized error across providers. Click Model, any image heading, or Normalized error to toggle ascending/descending row order; image headings sort by absolute percentage deviation. Missing values stay last. Optional provider grouping applies the chosen sort within each provider. Image-order controls reorder columns by original ID, mean error, or a selected model's error.
+
+Cells and overall error use D3's continuous `interpolateRdYlGn`, reversed: 0% green, 50% yellow, 100%+ red. Both tables share this fixed domain; only color is clamped, not the numeric values. Foreground color adjusts for contrast. Zero-denominator and missing cells are neutral. D3 7.9.0 is served locally from `vendor/` with its license; no runtime CDN is required.
 
 The loader does not scan `eval/` or fetch metadata JSON. All model names, image columns, ground truths, predictions, and scores originate exclusively from the result files listed in `eval/include.txt`. Image files are fetched only for the thumbnails.

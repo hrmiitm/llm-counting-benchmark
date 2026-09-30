@@ -38,89 +38,136 @@ function organize(sources, warnings) {
   }
   return groups;
 }
+// Fixed domain across both tables: 0% green, 50% yellow, 100%+ red.
+const errorColor = value => d3.interpolateRdYlGn(1 - Math.min(1, Math.max(0, value)));
+function shade(node, value) {
+  if (value === null) return;
+  const color = d3.rgb(errorColor(value));
+  node.style.backgroundColor = color.formatRgb();
+  const linear = channel => { const c = channel / 255; return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; };
+  const luminance = .2126 * linear(color.r) + .7152 * linear(color.g) + .0722 * linear(color.b);
+  node.style.color = luminance > .179 ? '#000' : '#fff';
+}
+function deviation(model, item) {
+  const predicted = model.predictions.get(item.image)?.model_count;
+  return validCount(predicted) && item['actual-count'] > 0 ? Math.abs(predicted - item['actual-count']) / item['actual-count'] : null;
+}
+function mean(values) {
+  const valid = values.filter(value => value !== null);
+  return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
+}
+// Missing values stay last in both directions.
+function order(a, b, ascending) {
+  if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
+  return (typeof a === 'number' ? a - b : compare(a, b)) * (ascending ? 1 : -1);
+}
 function renderGroup(id, group) {
   const section = el('section');
   const heading = el('div', undefined, 'section-heading');
-  const title = el('h2', `Group ${id}`);
-  title.id = `group-${id}`;
+  const title = el('h2', `Group ${id}`); title.id = `group-${id}`;
   section.setAttribute('aria-labelledby', title.id);
   heading.append(title, el('p', `${group.images.size} images · ${group.models.size} model configurations`));
   section.append(heading);
-  const controls = el('fieldset');
-  controls.append(el('legend', 'Show in cells'));
+  const images = [...group.images.values()];
+  const models = [...group.models.values()];
+  const scores = new Map(models.map(model => [model, mean(images.map(item => deviation(model, item)))]));
+  const imageScores = new Map(images.map(item => [item.image, mean(models.map(model => deviation(model, item)))]));
+  let sortKey = 'error'; let ascending = true;
+  const controls = el('fieldset'); controls.append(el('legend', 'Show in cells'));
   const modes = new Map();
-  for (const [key, text] of [['ratio', 'Predicted / actual'], ['predicted', 'Predicted count'], ['difference', 'Difference (actual − predicted)']]) {
-    const label = el('label');
-    const input = el('input');
-    input.type = 'checkbox'; input.checked = key === 'ratio'; input.name = key;
+  for (const [key, text] of [['deviation', 'Percentage deviation'], ['ratio', 'Predicted / actual'], ['percentage', 'Predicted / actual (%)'], ['predicted', 'Predicted count'], ['difference', 'Difference (actual − predicted)']]) {
+    const label = el('label'); const input = el('input');
+    input.type = 'checkbox'; input.checked = key === 'deviation' || key === 'ratio'; input.name = key;
     modes.set(key, input); label.append(input, document.createTextNode(text)); controls.append(label);
   }
-  const wrap = el('div', undefined, 'table-wrap');
-  wrap.tabIndex = 0; wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', `Group ${id} results, scroll horizontally for all images`);
-  section.append(controls, wrap);
-  const images = [...group.images.values()].sort((a, b) => compare(a.id ?? a.image, b.id ?? b.image));
+  const sorting = el('div', undefined, 'sorting');
+  const groupedLabel = el('label'); const grouped = el('input'); grouped.type = 'checkbox';
+  groupedLabel.append(grouped, document.createTextNode('Group models by provider'));
+  const columnLabel = el('label', 'Image order '); const columns = el('select'); columns.setAttribute('aria-label', 'Image order');
+  for (const [value, text] of [['original', 'Original order'], ['easy', 'Lowest mean error first'], ['hard', 'Highest mean error first'], ['row', 'Selected model: lowest error first'], ['row-desc', 'Selected model: highest error first']]) {
+    const option = el('option', text); option.value = value; columns.append(option);
+  }
+  columnLabel.append(columns);
+  const modelLabel = el('label', 'Order images for '); const modelSelect = el('select'); modelSelect.setAttribute('aria-label', 'Order images for');
+  models.forEach((model, index) => { const option = el('option', `${model.name} (T ${model.temperature ?? '—'})`); option.value = index; modelSelect.append(option); });
+  modelLabel.append(modelSelect); modelLabel.hidden = true;
+  sorting.append(groupedLabel, columnLabel, modelLabel);
+  const wrap = el('div', undefined, 'table-wrap'); wrap.tabIndex = 0;
+  wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', `Group ${id} results, scroll horizontally for all images`);
+  section.append(controls, sorting, wrap);
+  function sortHeader(text, key) {
+    const th = el('th'); th.scope = 'col'; th.setAttribute('aria-sort', sortKey === key ? ascending ? 'ascending' : 'descending' : 'none');
+    const button = el('button', `${text} ${sortKey === key ? ascending ? '↑' : '↓' : '↕'}`, 'sort-button');
+    button.type = 'button'; button.dataset.sort = key;
+    button.addEventListener('click', () => {
+      ascending = sortKey === key ? !ascending : true; sortKey = key; draw();
+      [...wrap.querySelectorAll('.sort-button')].find(node => node.dataset.sort === key)?.focus({ preventScroll: true });
+    });
+    th.append(button); return th;
+  }
   function draw() {
+    modelLabel.hidden = !columns.value.startsWith('row');
+    const orderedImages = [...images].sort((a, b) => {
+      const mode = columns.value;
+      if (mode === 'original') return compare(a.id ?? a.image, b.id ?? b.image);
+      const score = item => mode.startsWith('row') ? deviation(models[Number(modelSelect.value)], item) : imageScores.get(item.image);
+      return order(score(a), score(b), mode === 'easy' || mode === 'row') || compare(a.id ?? a.image, b.id ?? b.image);
+    });
+    const sortedModels = [...models].sort((a, b) => {
+      const value = model => sortKey === 'model' ? model.name : sortKey === 'error' ? scores.get(model) : deviation(model, group.images.get(sortKey));
+      return order(value(a), value(b), ascending) || compare(a.name, b.name) || compare(a.temperature, b.temperature);
+    });
     const table = el('table');
-    table.append(el('caption', `Group ${id} · Object counts by model and image`));
-    const thead = el('thead'); const head = el('tr');
-    const modelHeader = el('th', 'Model'); modelHeader.scope = 'col'; head.append(modelHeader);
-    for (const item of images) {
-      const th = el('th'); th.scope = 'col';
-      const link = el('a', undefined, 'image-link');
-      link.href = `data/group${id}/${encodeURIComponent(item.image)}`;
-      link.target = '_blank'; link.rel = 'noopener';
-      const img = el('img'); img.src = link.href; img.alt = item.label || item.image; img.loading = 'lazy';
-      link.append(img, el('span', item.label || item.image));
-      th.append(link, el('small', `${item.image} · actual ${item['actual-count']}`)); head.append(th);
+    table.append(el('caption', `Group ${id} · Click a column heading to sort models${grouped.checked ? ' within each provider' : ''}. Image columns sort by absolute percentage deviation.`));
+    const thead = el('thead'); const head = el('tr'); head.append(sortHeader('Model', 'model'));
+    for (const item of orderedImages) {
+      const th = sortHeader(item.label || item.image, item.image);
+      const link = el('a', undefined, 'image-link'); link.href = `data/group${id}/${encodeURIComponent(item.image)}`; link.target = '_blank'; link.rel = 'noopener';
+      const img = el('img'); img.src = link.href; img.alt = `Open ${item.label || item.image}`; img.loading = 'lazy'; link.append(img);
+      th.prepend(link); th.append(el('small', `${item.image} · actual ${item['actual-count']}`)); head.append(th);
     }
-    const accuracyHeader = el('th', 'Accuracy'); accuracyHeader.scope = 'col'; head.append(accuracyHeader);
-    const errorHeader = el('th', 'Normalized error ↓'); errorHeader.scope = 'col';
-    errorHeader.title = 'Mean absolute percentage error across valid predictions with actual count greater than zero. Lower is better; 0% is perfect.';
-    head.append(errorHeader);
-    thead.append(head); table.append(thead);
-    const providers = new Map();
-    for (const model of [...group.models.values()].sort((a, b) => compare(a.provider, b.provider) || compare(a.name, b.name) || compare(a.temperature, b.temperature))) {
-      if (!providers.has(model.provider)) providers.set(model.provider, []);
-      providers.get(model.provider).push(model);
+    head.append(sortHeader('Normalized error', 'error')); thead.append(head); table.append(thead);
+    const batches = new Map();
+    for (const model of sortedModels) {
+      const key = grouped.checked ? model.provider : '';
+      if (!batches.has(key)) batches.set(key, []);
+      batches.get(key).push(model);
     }
-    for (const [provider, models] of providers) {
-      const body = el('tbody'); const providerRow = el('tr', undefined, 'provider');
-      const providerCell = el('th', provider); providerCell.colSpan = images.length + 3; providerCell.scope = 'rowgroup';
-      providerRow.append(providerCell); body.append(providerRow);
-      for (const model of models) {
+    const entries = [...batches]; if (grouped.checked) entries.sort(([a], [b]) => compare(a, b));
+    for (const [provider, batch] of entries) {
+      const body = el('tbody');
+      if (provider) {
+        const tr = el('tr', undefined, 'provider'); const th = el('th', provider); th.colSpan = images.length + 2; th.scope = 'rowgroup'; tr.append(th); body.append(tr);
+      }
+      for (const model of batch) {
         const tr = el('tr'); const name = el('th', model.name, 'model'); name.scope = 'row';
-        if (model.temperature !== undefined && model.temperature !== null) name.append(el('small', `Temperature ${model.temperature}`));
-        tr.append(name); let correct = 0; let evaluated = 0; let normalizedTotal = 0; let normalizedCount = 0;
-        for (const item of images) {
-          const row = model.predictions.get(item.image);
-          const td = el('td');
-          if (!row || !validCount(row.model_count)) {
-            td.textContent = '—'; td.title = 'No valid prediction';
-          } else {
-            evaluated++;
+        name.append(el('small', `${model.provider} · Temperature ${model.temperature ?? '—'}`)); tr.append(name);
+        for (const item of orderedImages) {
+          const row = model.predictions.get(item.image); const td = el('td'); const error = deviation(model, item);
+          if (!row || !validCount(row.model_count)) { td.textContent = '—'; td.title = 'No valid prediction'; }
+          else {
             const predicted = row.model_count; const actual = item['actual-count']; const diff = actual - predicted;
-            if (diff === 0) correct++;
-            if (actual > 0) { normalizedTotal += Math.abs(diff) / actual; normalizedCount++; }
-            td.className = diff === 0 ? 'exact' : diff > 0 ? 'under' : 'over';
-            td.title = `Predicted ${predicted}; actual ${actual}; difference ${diff}`;
+            shade(td, error);
+            td.title = `Predicted ${predicted}; actual ${actual}; ${predicted === actual ? 'exact count' : predicted > actual ? 'overcount' : 'undercount'}; absolute deviation ${error === null ? 'undefined (actual is zero)' : `${(100 * error).toFixed(2)}%`}`;
+            if (modes.get('deviation').checked) td.append(el('span', error === null ? 'N/A' : `${(100 * error).toFixed(1)}%`, 'metric'));
             if (modes.get('ratio').checked) td.append(el('span', `${predicted} / ${actual}`, 'metric'));
+            if (modes.get('percentage').checked) td.append(el('span', actual > 0 ? `${(100 * predicted / actual).toFixed(1)}% of actual` : 'N/A (actual = 0)', 'metric'));
             if (modes.get('predicted').checked) td.append(el('span', `Pred: ${predicted}`, 'metric'));
             if (modes.get('difference').checked) td.append(el('span', `Δ ${diff > 0 ? '+' : ''}${diff}`, 'metric'));
             if (!td.childNodes.length) { td.textContent = '·'; td.setAttribute('aria-label', td.title); }
           }
           tr.append(td);
         }
-        const accuracy = el('td', evaluated ? `${(100 * correct / evaluated).toFixed(1)}%` : '—', 'accuracy');
-        accuracy.append(el('small', `${correct}/${evaluated} exact`), el('small', `${evaluated}/${images.length} evaluated`));
-        const normalized = el('td', normalizedCount ? `${(100 * normalizedTotal / normalizedCount).toFixed(1)}%` : '—', 'normalized');
-        normalized.append(el('small', 'lower is better'), el('small', `${normalizedCount}/${images.length} evaluated`));
-        tr.append(accuracy, normalized); body.append(tr);
+        const score = scores.get(model);
+        const count = images.filter(item => deviation(model, item) !== null).length;
+        const normalized = el('td', score === null ? '—' : `${(100 * score).toFixed(1)}%`, 'normalized'); shade(normalized, score);
+        normalized.append(el('small', 'mean deviation'), el('small', `${count}/${images.length} evaluated`)); tr.append(normalized); body.append(tr);
       }
       table.append(body);
     }
     wrap.replaceChildren(table);
   }
-  controls.addEventListener('change', draw); draw(); return section;
+  controls.addEventListener('change', draw); sorting.addEventListener('change', draw); draw(); return section;
 }
 async function load() {
   const warnings = [];
@@ -160,4 +207,6 @@ async function load() {
     errors.textContent = `Some results could not be loaded:\n${warnings.join('\n')}`;
   }
 }
+const ramp = document.querySelector('.color-ramp');
+ramp.style.background = `linear-gradient(to right, ${Array.from({ length: 101 }, (_, i) => `${errorColor(i / 100)} ${i}%`).join(', ')})`;
 load();
