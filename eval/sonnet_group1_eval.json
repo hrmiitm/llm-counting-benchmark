@@ -4,7 +4,7 @@
     "id": "1",
     "image": "813.jpg",
     "label": "bottle caps",
-    "actual-count": 184,
+    "actual-count": 185,
     "model": "anthropic/claude-haiku-4.5",
     "model_temp": 0,
     "model_count": 127

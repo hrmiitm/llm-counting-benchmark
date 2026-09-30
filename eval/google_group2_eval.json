@@ -34,7 +34,7 @@
     "id": "4",
     "image": "733.jpg",
     "label": "cassettes",
-    "actual-count": 15,
+    "actual-count": 16,
     "model": "google/gemini-3.8-flash",
     "model_temp": 0,
     "model_count": 15
@@ -94,7 +94,7 @@
     "id": "4",
     "image": "733.jpg",
     "label": "cassettes",
-    "actual-count": 15,
+    "actual-count": 16,
     "model": "google/gemini-3.1-flash-lite",
     "model_temp": 0,
     "model_count": 18
