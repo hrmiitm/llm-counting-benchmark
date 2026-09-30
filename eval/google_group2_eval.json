@@ -1,0 +1,122 @@
+[
+  {
+    "group": "2",
+    "id": "1",
+    "image": "65.jpg",
+    "label": "tomatoes",
+    "actual-count": 29,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 28
+  },
+  {
+    "group": "2",
+    "id": "2",
+    "image": "213.jpg",
+    "label": "balls",
+    "actual-count": 169,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 196
+  },
+  {
+    "group": "2",
+    "id": "3",
+    "image": "721.jpg",
+    "label": "windows",
+    "actual-count": 12,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 12
+  },
+  {
+    "group": "2",
+    "id": "4",
+    "image": "733.jpg",
+    "label": "cassettes",
+    "actual-count": 15,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 15
+  },
+  {
+    "group": "2",
+    "id": "5",
+    "image": "741.jpg",
+    "label": "ants",
+    "actual-count": 13,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 10
+  },
+  {
+    "group": "2",
+    "id": "6",
+    "image": "2818.jpg",
+    "label": "chairs",
+    "actual-count": 252,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 230
+  },
+  {
+    "group": "2",
+    "id": "1",
+    "image": "65.jpg",
+    "label": "tomatoes",
+    "actual-count": 29,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 28
+  },
+  {
+    "group": "2",
+    "id": "2",
+    "image": "213.jpg",
+    "label": "balls",
+    "actual-count": 169,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 196
+  },
+  {
+    "group": "2",
+    "id": "3",
+    "image": "721.jpg",
+    "label": "windows",
+    "actual-count": 12,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 12
+  },
+  {
+    "group": "2",
+    "id": "4",
+    "image": "733.jpg",
+    "label": "cassettes",
+    "actual-count": 15,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 18
+  },
+  {
+    "group": "2",
+    "id": "5",
+    "image": "741.jpg",
+    "label": "ants",
+    "actual-count": 13,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 11
+  },
+  {
+    "group": "2",
+    "id": "6",
+    "image": "2818.jpg",
+    "label": "chairs",
+    "actual-count": 252,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 235
+  }
+]

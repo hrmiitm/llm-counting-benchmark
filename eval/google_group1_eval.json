@@ -1,0 +1,122 @@
+[
+  {
+    "group": "1",
+    "id": "1",
+    "image": "813.jpg",
+    "label": "bottle caps",
+    "actual-count": 184,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 165
+  },
+  {
+    "group": "1",
+    "id": "2",
+    "image": "869.jpg",
+    "label": "books",
+    "actual-count": 250,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 320
+  },
+  {
+    "group": "1",
+    "id": "3",
+    "image": "1084.jpg",
+    "label": "buffaloes",
+    "actual-count": 198,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 215
+  },
+  {
+    "group": "1",
+    "id": "4",
+    "image": "2373.jpg",
+    "label": "bricks",
+    "actual-count": 130,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 139
+  },
+  {
+    "group": "1",
+    "id": "5",
+    "image": "2648.jpg",
+    "label": "cement bags",
+    "actual-count": 91,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 91
+  },
+  {
+    "group": "1",
+    "id": "6",
+    "image": "2933.jpg",
+    "label": "stamps",
+    "actual-count": 45,
+    "model": "google/gemini-3.8-flash",
+    "model_temp": 0,
+    "model_count": 45
+  },
+  {
+    "group": "1",
+    "id": "1",
+    "image": "813.jpg",
+    "label": "bottle caps",
+    "actual-count": 184,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 187
+  },
+  {
+    "group": "1",
+    "id": "2",
+    "image": "869.jpg",
+    "label": "books",
+    "actual-count": 250,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 238
+  },
+  {
+    "group": "1",
+    "id": "3",
+    "image": "1084.jpg",
+    "label": "buffaloes",
+    "actual-count": 198,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 187
+  },
+  {
+    "group": "1",
+    "id": "4",
+    "image": "2373.jpg",
+    "label": "bricks",
+    "actual-count": 130,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 108
+  },
+  {
+    "group": "1",
+    "id": "5",
+    "image": "2648.jpg",
+    "label": "cement bags",
+    "actual-count": 91,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 118
+  },
+  {
+    "group": "1",
+    "id": "6",
+    "image": "2933.jpg",
+    "label": "stamps",
+    "actual-count": 45,
+    "model": "google/gemini-3.1-flash-lite",
+    "model_temp": 0,
+    "model_count": 48
+  }
+]

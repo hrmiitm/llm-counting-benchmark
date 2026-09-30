@@ -1,0 +1,122 @@
+[
+  {
+    "group": "1",
+    "id": "1",
+    "image": "813.jpg",
+    "label": "bottle caps",
+    "actual-count": 184,
+    "model": "openai/gpt-5.6-luna",
+    "model_temp": 0,
+    "model_count": 207
+  },
+  {
+    "group": "1",
+    "id": "2",
+    "image": "869.jpg",
+    "label": "books",
+    "actual-count": 250,
+    "model": "openai/gpt-5.6-luna",
+    "model_temp": 0,
+    "model_count": 315
+  },
+  {
+    "group": "1",
+    "id": "3",
+    "image": "1084.jpg",
+    "label": "buffaloes",
+    "actual-count": 198,
+    "model": "openai/gpt-5.6-luna",
+    "model_temp": 0,
+    "model_count": 204
+  },
+  {
+    "group": "1",
+    "id": "4",
+    "image": "2373.jpg",
+    "label": "bricks",
+    "actual-count": 130,
+    "model": "openai/gpt-5.6-luna",
+    "model_temp": 0,
+    "model_count": 180
+  },
+  {
+    "group": "1",
+    "id": "5",
+    "image": "2648.jpg",
+    "label": "cement bags",
+    "actual-count": 91,
+    "model": "openai/gpt-5.6-luna",
+    "model_temp": 0,
+    "model_count": 74
+  },
+  {
+    "group": "1",
+    "id": "6",
+    "image": "2933.jpg",
+    "label": "stamps",
+    "actual-count": 45,
+    "model": "openai/gpt-5.6-luna",
+    "model_temp": 0,
+    "model_count": 45
+  },
+  {
+    "group": "1",
+    "id": "1",
+    "image": "813.jpg",
+    "label": "bottle caps",
+    "actual-count": 184,
+    "model": "openai/gpt-5.6-terra",
+    "model_temp": 0,
+    "model_count": 202
+  },
+  {
+    "group": "1",
+    "id": "2",
+    "image": "869.jpg",
+    "label": "books",
+    "actual-count": 250,
+    "model": "openai/gpt-5.6-terra",
+    "model_temp": 0,
+    "model_count": 274
+  },
+  {
+    "group": "1",
+    "id": "3",
+    "image": "1084.jpg",
+    "label": "buffaloes",
+    "actual-count": 198,
+    "model": "openai/gpt-5.6-terra",
+    "model_temp": 0,
+    "model_count": 247
+  },
+  {
+    "group": "1",
+    "id": "4",
+    "image": "2373.jpg",
+    "label": "bricks",
+    "actual-count": 130,
+    "model": "openai/gpt-5.6-terra",
+    "model_temp": 0,
+    "model_count": 77
+  },
+  {
+    "group": "1",
+    "id": "5",
+    "image": "2648.jpg",
+    "label": "cement bags",
+    "actual-count": 91,
+    "model": "openai/gpt-5.6-terra",
+    "model_temp": 0,
+    "model_count": 79
+  },
+  {
+    "group": "1",
+    "id": "6",
+    "image": "2933.jpg",
+    "label": "stamps",
+    "actual-count": 45,
+    "model": "openai/gpt-5.6-terra",
+    "model_temp": 0,
+    "model_count": 41
+  }
+]
