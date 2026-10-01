@@ -278,7 +278,7 @@ function renderConfidenceGroup(id, group) {
       const value = model => {
         if (sortKey === 'model') return model.name;
         if (sortKey === 'error') return scores.get(model);
-        if (['accuracy', 'confidence', 'gap', 'brier', 'ece'].includes(sortKey)) return metrics.get(model)?.[sortKey] ?? null;
+        if (['confidence', 'gap', 'brier', 'ece'].includes(sortKey)) return metrics.get(model)?.[sortKey] ?? null;
         return deviation(model, group.images.get(sortKey));
       };
       return order(value(a), value(b), ascending) || compare(a.name, b.name) || compare(a.temperature, b.temperature);
@@ -292,7 +292,7 @@ function renderConfidenceGroup(id, group) {
       const img = el('img'); img.src = link.href; img.alt = `Open ${item.label || item.image}`; img.loading = 'lazy'; link.append(img);
       th.prepend(link); th.append(el('small', `${item.image} · actual ${item['actual-count']}`)); head.append(th);
     }
-    for (const [label, key] of [['Normalized error', 'error'], ['Exact accuracy', 'accuracy'], ['Mean confidence', 'confidence'], ['Calibration gap', 'gap'], ['Brier score', 'brier'], ['ECE', 'ece']]) head.append(sortHeader(label, key));
+    for (const [label, key] of [['Normalized error', 'error'], ['Mean confidence', 'confidence'], ['Calibration gap', 'gap'], ['Brier score', 'brier'], ['ECE', 'ece']]) head.append(sortHeader(label, key));
     thead.append(head); table.append(thead);
     const batches = new Map();
     for (const model of sortedModels) {
@@ -305,7 +305,7 @@ function renderConfidenceGroup(id, group) {
       const body = el('tbody');
       if (provider) {
         const providerRow = el('tr', undefined, 'provider'); const providerHead = el('th', provider);
-        providerHead.colSpan = images.length + 7; providerHead.scope = 'rowgroup'; providerRow.append(providerHead); body.append(providerRow);
+        providerHead.colSpan = images.length + 6; providerHead.scope = 'rowgroup'; providerRow.append(providerHead); body.append(providerRow);
       }
       for (const model of batch) {
         const tr = el('tr'); const name = el('th', model.name, 'model'); name.scope = 'row';
@@ -343,12 +343,12 @@ function renderConfidenceGroup(id, group) {
         normalized.append(el('small', 'mean deviation'), el('small', `${normalizedCount}/${images.length} evaluated`)); tr.append(normalized);
         const score = metrics.get(model);
         const values = score ? [
-          [score.accuracy, 'exact matches'], [score.confidence, 'stated probability'], [score.gap, '|confidence − accuracy|'],
+          [score.confidence, 'stated probability'], [score.gap, '|confidence − accuracy|'],
           [score.brier, 'mean squared error'], [score.ece, '10-bin expected error'],
-        ] : Array.from({ length: 5 }, () => [null, 'no valid samples']);
+        ] : Array.from({ length: 4 }, () => [null, 'no valid samples']);
         values.forEach(([value, label], index) => {
-          const td = el('td', value === null ? '—' : index === 3 ? value.toFixed(3) : `${(100 * value).toFixed(1)}%`, 'summary-metric');
-          if (value !== null) shade(td, index === 0 ? 1 - value : index === 1 ? Math.abs(value - score.accuracy) : value);
+          const td = el('td', value === null ? '—' : index === 2 ? value.toFixed(3) : `${(100 * value).toFixed(1)}%`, 'summary-metric');
+          if (value !== null) shade(td, index === 0 ? Math.abs(value - score.accuracy) : value);
           td.append(el('small', label), el('small', score ? `${score.count}/${images.length} evaluated` : '0 evaluated')); tr.append(td);
         });
         body.append(tr);
