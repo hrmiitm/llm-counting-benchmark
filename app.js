@@ -212,66 +212,153 @@ function renderConfidenceGroup(id, group) {
   const title = el('h2', `Group ${id} · Confidence calibration`); title.id = `confidence-group-${id}`;
   section.setAttribute('aria-labelledby', title.id);
   heading.append(title, el('p', `${group.images.size} images · ${group.models.size} model configurations`));
-  const explanation = el('p', 'Confidence is the model’s stated probability that its count is exactly correct. Cell color represents individual calibration error: confident correct answers and cautious incorrect answers score best. The summary compares confidence with exact-match outcomes; lower calibration gap, Brier score, and ECE are better. Results are provisional because six images are too few for a dependable calibration estimate.', 'confidence-intro');
-  const images = [...group.images.values()].sort((a, b) => compare(a.id ?? a.image, b.id ?? b.image));
+  const explanation = el('p', 'Confidence is the model’s stated probability that its count is exactly correct. “Deviation ÷ uncertainty” divides percentage deviation by 100% − confidence: above 1× means the observed deviation exceeded the stated uncertainty. It is an exploratory severity diagnostic, not a formal calibration score. Lower normalized error, calibration gap, Brier score, and ECE are better. Results are provisional because six images are too few for a dependable calibration estimate.', 'confidence-intro');
+  const images = [...group.images.values()];
   const models = [...group.models.values()];
   const metrics = new Map(models.map(model => [model, confidenceMetrics(model, images)]));
-  models.sort((a, b) => order(metrics.get(a)?.ece ?? null, metrics.get(b)?.ece ?? null, true) || compare(a.name, b.name));
+  const scores = new Map(models.map(model => [model, mean(images.map(item => deviation(model, item)))]));
+  const imageScores = new Map(images.map(item => [item.image, mean(models.map(model => deviation(model, item)))]));
+  let sortKey = 'error'; let ascending = true;
+  const controls = el('fieldset'); controls.append(el('legend', 'Show in cells'));
+  const modes = new Map();
+  for (const [key, text, checked] of [
+    ['deviation', 'Percentage deviation', true], ['ratio', 'Predicted / actual', true],
+    ['percentage', 'Predicted / actual (%)', false], ['predicted', 'Predicted count', false],
+    ['difference', 'Difference (actual − predicted)', false], ['confidence', 'Confidence', true],
+    ['calibration', 'Individual calibration error', false], ['uncertainty-ratio', 'Deviation ÷ uncertainty', false],
+  ]) {
+    const label = el('label'); const input = el('input'); input.type = 'checkbox'; input.checked = checked; input.name = key;
+    modes.set(key, input); label.append(input, document.createTextNode(text)); controls.append(label);
+  }
+  const sorting = el('div', undefined, 'sorting');
+  const groupedLabel = el('label'); const grouped = el('input'); grouped.type = 'checkbox';
+  groupedLabel.append(grouped, document.createTextNode('Group models by provider'));
+  const columnLabel = el('label', 'Image order '); const columns = el('select'); columns.setAttribute('aria-label', 'Confidence-table image order');
+  for (const [value, text] of [['original', 'Original order'], ['easy', 'Lowest mean error first'], ['hard', 'Highest mean error first'], ['row', 'Selected model: lowest error first'], ['row-desc', 'Selected model: highest error first']]) {
+    const option = el('option', text); option.value = value; columns.append(option);
+  }
+  columnLabel.append(columns);
+  const modelLabel = el('label', 'Order images for '); const modelSelect = el('select'); modelSelect.setAttribute('aria-label', 'Confidence-table model for image order');
+  models.forEach((model, index) => { const option = el('option', `${model.name} (T ${model.temperature ?? '—'})`); option.value = index; modelSelect.append(option); });
+  modelLabel.append(modelSelect); modelLabel.hidden = true;
+  sorting.append(groupedLabel, columnLabel, modelLabel);
   const wrap = el('div', undefined, 'table-wrap'); wrap.tabIndex = 0;
   wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', `Group ${id} confidence calibration results, scroll horizontally for all columns`);
-  const table = el('table', undefined, 'confidence-table');
-  table.append(el('caption', `Group ${id} confidence · Exact correctness is 1 only when predicted count equals actual count. ECE uses 10 confidence bins.`));
-  const thead = el('thead'); const head = el('tr');
-  const modelHead = el('th', 'Model'); modelHead.scope = 'col'; head.append(modelHead);
-  for (const item of images) {
-    const th = el('th'); th.scope = 'col';
-    const link = el('a', undefined, 'image-link'); link.href = `data/group${id}/${encodeURIComponent(item.image)}`; link.target = '_blank'; link.rel = 'noopener';
-    const img = el('img'); img.src = link.href; img.alt = `Open ${item.label || item.image}`; img.loading = 'lazy'; link.append(img);
-    th.append(link, el('span', item.label || item.image, 'column-title'), el('small', `${item.image} · actual ${item['actual-count']}`)); head.append(th);
-  }
-  for (const label of ['Exact accuracy', 'Mean confidence', 'Calibration gap', 'Brier score', 'ECE']) {
-    const th = el('th', label); th.scope = 'col'; head.append(th);
-  }
-  thead.append(head); table.append(thead);
-  const batches = new Map();
-  for (const model of models) {
-    if (!batches.has(model.provider)) batches.set(model.provider, []);
-    batches.get(model.provider).push(model);
-  }
-  for (const [provider, batch] of [...batches].sort(([a], [b]) => compare(a, b))) {
-    const body = el('tbody');
-    const providerRow = el('tr', undefined, 'provider'); const providerHead = el('th', provider);
-    providerHead.colSpan = images.length + 6; providerHead.scope = 'rowgroup'; providerRow.append(providerHead); body.append(providerRow);
-    for (const model of batch) {
-      const tr = el('tr'); const name = el('th', model.name, 'model'); name.scope = 'row';
-      name.append(el('small', `${model.provider} · Temperature ${model.temperature ?? '—'}`)); tr.append(name);
-      for (const item of images) {
-        const row = model.predictions.get(item.image); const td = el('td');
-        if (!row || !validCount(row.model_count) || !validConfidence(row.confidence)) {
-          td.textContent = '—'; td.title = 'No valid count and confidence prediction';
-        } else {
-          const correct = row.model_count === item['actual-count']; const probability = row.confidence / 100;
-          shade(td, Math.abs(probability - Number(correct)));
-          td.append(el('span', `${row.model_count} / ${item['actual-count']}`, 'metric'), el('span', `${row.confidence.toFixed(1)}% confident`, 'metric'), el('span', correct ? 'Exact' : 'Not exact', 'outcome'));
-          td.title = `${correct ? 'Exact count' : 'Incorrect count'}; stated confidence ${row.confidence.toFixed(1)}%; individual calibration error ${(100 * Math.abs(probability - Number(correct))).toFixed(1)} percentage points`;
-        }
-        tr.append(td);
-      }
-      const score = metrics.get(model);
-      const values = score ? [
-        [score.accuracy, 'exact matches'], [score.confidence, 'stated probability'], [score.gap, '|confidence − accuracy|'],
-        [score.brier, 'mean squared error'], [score.ece, '10-bin expected error'],
-      ] : Array.from({ length: 5 }, () => [null, 'no valid samples']);
-      values.forEach(([value, label], index) => {
-        const td = el('td', value === null ? '—' : index === 3 ? value.toFixed(3) : `${(100 * value).toFixed(1)}%`, 'summary-metric');
-        if (value !== null) shade(td, index === 0 ? 1 - value : index === 1 ? Math.abs(value - score.accuracy) : value);
-        td.append(el('small', label), el('small', score ? `${score.count}/${images.length} evaluated` : '0 evaluated')); tr.append(td);
+  function directionButtons(axis, key, label, activeDirection, onSort) {
+    const buttons = el('div', undefined, 'sort-directions');
+    for (const [direction, text] of [['asc', '↑ Asc'], ['desc', '↓ Desc']]) {
+      const button = el('button', text, 'direction-button'); button.type = 'button';
+      button.dataset.axis = `confidence-${axis}`; button.dataset.key = key; button.dataset.direction = direction;
+      button.setAttribute('aria-label', `Sort confidence ${axis === 'column' ? 'models' : 'images'} by ${label}, ${direction === 'asc' ? 'ascending' : 'descending'}`);
+      button.setAttribute('aria-pressed', String(activeDirection === direction));
+      button.addEventListener('click', () => {
+        onSort(direction); draw();
+        [...wrap.querySelectorAll('.direction-button')].find(node => node.dataset.axis === `confidence-${axis}` && node.dataset.key === String(key) && node.dataset.direction === direction)?.focus({ preventScroll: true });
       });
-      body.append(tr);
+      buttons.append(button);
     }
-    table.append(body);
+    return buttons;
   }
-  wrap.append(table); section.append(heading, explanation, wrap); return section;
+  function sortHeader(text, key) {
+    const th = el('th'); th.scope = 'col'; th.setAttribute('aria-sort', sortKey === key ? ascending ? 'ascending' : 'descending' : 'none');
+    th.append(el('span', text, 'column-title'), directionButtons('column', key, text,
+      sortKey === key ? ascending ? 'asc' : 'desc' : null,
+      direction => { sortKey = key; ascending = direction === 'asc'; }));
+    return th;
+  }
+  function draw() {
+    modelLabel.hidden = !columns.value.startsWith('row');
+    const orderedImages = [...images].sort((a, b) => {
+      const mode = columns.value;
+      if (mode === 'original') return compare(a.id ?? a.image, b.id ?? b.image);
+      const score = item => mode.startsWith('row') ? deviation(models[Number(modelSelect.value)], item) : imageScores.get(item.image);
+      return order(score(a), score(b), mode === 'easy' || mode === 'row') || compare(a.id ?? a.image, b.id ?? b.image);
+    });
+    const sortedModels = [...models].sort((a, b) => {
+      const value = model => {
+        if (sortKey === 'model') return model.name;
+        if (sortKey === 'error') return scores.get(model);
+        if (['accuracy', 'confidence', 'gap', 'brier', 'ece'].includes(sortKey)) return metrics.get(model)?.[sortKey] ?? null;
+        return deviation(model, group.images.get(sortKey));
+      };
+      return order(value(a), value(b), ascending) || compare(a.name, b.name) || compare(a.temperature, b.temperature);
+    });
+    const table = el('table', undefined, 'confidence-table');
+    table.append(el('caption', `Group ${id} confidence · Exact correctness is 1 only when predicted count equals actual count. ECE uses 10 confidence bins.`));
+    const thead = el('thead'); const head = el('tr'); head.append(sortHeader('Model', 'model'));
+    for (const item of orderedImages) {
+      const th = sortHeader(item.label || item.image, item.image);
+      const link = el('a', undefined, 'image-link'); link.href = `data/group${id}/${encodeURIComponent(item.image)}`; link.target = '_blank'; link.rel = 'noopener';
+      const img = el('img'); img.src = link.href; img.alt = `Open ${item.label || item.image}`; img.loading = 'lazy'; link.append(img);
+      th.prepend(link); th.append(el('small', `${item.image} · actual ${item['actual-count']}`)); head.append(th);
+    }
+    for (const [label, key] of [['Normalized error', 'error'], ['Exact accuracy', 'accuracy'], ['Mean confidence', 'confidence'], ['Calibration gap', 'gap'], ['Brier score', 'brier'], ['ECE', 'ece']]) head.append(sortHeader(label, key));
+    thead.append(head); table.append(thead);
+    const batches = new Map();
+    for (const model of sortedModels) {
+      const key = grouped.checked ? model.provider : '';
+      if (!batches.has(key)) batches.set(key, []);
+      batches.get(key).push(model);
+    }
+    const entries = [...batches]; if (grouped.checked) entries.sort(([a], [b]) => compare(a, b));
+    for (const [provider, batch] of entries) {
+      const body = el('tbody');
+      if (provider) {
+        const providerRow = el('tr', undefined, 'provider'); const providerHead = el('th', provider);
+        providerHead.colSpan = images.length + 7; providerHead.scope = 'rowgroup'; providerRow.append(providerHead); body.append(providerRow);
+      }
+      for (const model of batch) {
+        const tr = el('tr'); const name = el('th', model.name, 'model'); name.scope = 'row';
+        name.append(el('small', `${model.provider} · Temperature ${model.temperature ?? '—'}`));
+        const modelIndex = models.indexOf(model);
+        name.append(directionButtons('row', modelIndex, `${model.name} (temperature ${model.temperature ?? 'unspecified'})`,
+          columns.value.startsWith('row') && Number(modelSelect.value) === modelIndex ? columns.value === 'row' ? 'asc' : 'desc' : null,
+          direction => { modelSelect.value = String(modelIndex); columns.value = direction === 'asc' ? 'row' : 'row-desc'; }));
+        tr.append(name);
+        for (const item of orderedImages) {
+          const row = model.predictions.get(item.image); const td = el('td'); const error = deviation(model, item);
+          if (!row || !validCount(row.model_count) || !validConfidence(row.confidence)) {
+            td.textContent = '—'; td.title = 'No valid count and confidence prediction';
+          } else {
+            const predicted = row.model_count; const actual = item['actual-count']; const diff = actual - predicted;
+            const correct = predicted === actual; const probability = row.confidence / 100;
+            const calibrationError = Math.abs(probability - Number(correct)); const uncertainty = 1 - probability;
+            const uncertaintyRatio = error === null ? null : uncertainty === 0 ? error === 0 ? 0 : Infinity : error / uncertainty;
+            shade(td, error);
+            td.title = `${correct ? 'Exact count' : 'Incorrect count'}; deviation ${error === null ? 'undefined' : `${(100 * error).toFixed(2)}%`}; confidence ${row.confidence.toFixed(1)}%; individual calibration error ${(100 * calibrationError).toFixed(1)} percentage points`;
+            if (modes.get('deviation').checked) td.append(el('span', error === null ? 'N/A' : `${(100 * error).toFixed(1)}%`, 'metric'));
+            if (modes.get('ratio').checked) td.append(el('span', `${predicted} / ${actual}`, 'metric'));
+            if (modes.get('percentage').checked) td.append(el('span', actual > 0 ? `${(100 * predicted / actual).toFixed(1)}% of actual` : 'N/A (actual = 0)', 'metric'));
+            if (modes.get('predicted').checked) td.append(el('span', `Pred: ${predicted}`, 'metric'));
+            if (modes.get('difference').checked) td.append(el('span', `Δ ${diff > 0 ? '+' : ''}${diff}`, 'metric'));
+            if (modes.get('confidence').checked) td.append(el('span', `${row.confidence.toFixed(1)}% confident`, 'metric'));
+            if (modes.get('calibration').checked) td.append(el('span', `Cal error: ${(100 * calibrationError).toFixed(1)} pp`, 'metric'));
+            if (modes.get('uncertainty-ratio').checked) td.append(el('span', uncertaintyRatio === null ? 'Dev ÷ uncert: N/A' : `Dev ÷ uncert: ${Number.isFinite(uncertaintyRatio) ? uncertaintyRatio.toFixed(2) : '∞'}×`, 'metric'));
+            if (!td.childNodes.length) { td.textContent = '·'; td.setAttribute('aria-label', td.title); }
+          }
+          tr.append(td);
+        }
+        const normalizedScore = scores.get(model); const normalizedCount = images.filter(item => deviation(model, item) !== null).length;
+        const normalized = el('td', normalizedScore === null ? '—' : `${(100 * normalizedScore).toFixed(1)}%`, 'normalized'); shade(normalized, normalizedScore);
+        normalized.append(el('small', 'mean deviation'), el('small', `${normalizedCount}/${images.length} evaluated`)); tr.append(normalized);
+        const score = metrics.get(model);
+        const values = score ? [
+          [score.accuracy, 'exact matches'], [score.confidence, 'stated probability'], [score.gap, '|confidence − accuracy|'],
+          [score.brier, 'mean squared error'], [score.ece, '10-bin expected error'],
+        ] : Array.from({ length: 5 }, () => [null, 'no valid samples']);
+        values.forEach(([value, label], index) => {
+          const td = el('td', value === null ? '—' : index === 3 ? value.toFixed(3) : `${(100 * value).toFixed(1)}%`, 'summary-metric');
+          if (value !== null) shade(td, index === 0 ? 1 - value : index === 1 ? Math.abs(value - score.accuracy) : value);
+          td.append(el('small', label), el('small', score ? `${score.count}/${images.length} evaluated` : '0 evaluated')); tr.append(td);
+        });
+        body.append(tr);
+      }
+      table.append(body);
+    }
+    wrap.replaceChildren(table);
+  }
+  controls.addEventListener('change', draw); sorting.addEventListener('change', draw);
+  section.append(heading, explanation, controls, sorting, wrap); draw(); return section;
 }
 async function load() {
   const warnings = [];

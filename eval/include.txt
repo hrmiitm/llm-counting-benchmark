@@ -9,4 +9,10 @@ haiku_group2_eval.json
 opus_group1_eval.json
 sol_group1_eval.json
 astra_fabel_llama_group1_eval.json
+anthropic_claude-haiku-4.5_conf_group1_eval.json
+google_gemini-3.1-flash-lite_conf_group1_eval.json
+google_gemini-3.8-flash_conf_group1_eval.json
+meta-llama_llama-4-maverick_conf_group1_eval.json
+openai_gpt-5.6-luna_conf_group1_eval.json
+anthropic_claude-sonnet-5.5_conf_group1_eval.json
 

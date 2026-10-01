@@ -1,0 +1,68 @@
+[
+  {
+    "group": "1",
+    "id": "1",
+    "image": "813.jpg",
+    "label": "bottle caps",
+    "actual-count": 185,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 208,
+    "confidence": 95.0
+  },
+  {
+    "group": "1",
+    "id": "2",
+    "image": "869.jpg",
+    "label": "books",
+    "actual-count": 250,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 252,
+    "confidence": 95.0
+  },
+  {
+    "group": "1",
+    "id": "3",
+    "image": "1084.jpg",
+    "label": "buffaloes",
+    "actual-count": 198,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 437,
+    "confidence": 70.0
+  },
+  {
+    "group": "1",
+    "id": "4",
+    "image": "2373.jpg",
+    "label": "bricks",
+    "actual-count": 130,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 63,
+    "confidence": 100.0
+  },
+  {
+    "group": "1",
+    "id": "5",
+    "image": "2648.jpg",
+    "label": "cement bags",
+    "actual-count": 91,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 195,
+    "confidence": 80.0
+  },
+  {
+    "group": "1",
+    "id": "6",
+    "image": "2933.jpg",
+    "label": "stamps",
+    "actual-count": 45,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 37,
+    "confidence": 100.0
+  }
+]

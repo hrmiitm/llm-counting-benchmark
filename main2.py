@@ -80,18 +80,18 @@ def evaluate_group1(model, model_temp=0, data_path="data", output_path="eval"):
 
 if __name__ == "__main__":
     models = [
-        "anthropic/claude-fable-5.1",
-        "anthropic/claude-haiku-4.5",
-        "anthropic/claude-opus-5.5",
+        # "anthropic/claude-haiku-4.5",
+        # "google/gemini-3.1-flash-lite",
+        # "google/gemini-3.8-flash",
+        # "meta-llama/llama-4-maverick",
+        # "openai/gpt-5.6-luna",
+        # "openai/gpt-5.6-sol",
+        # "openai/gpt-6.1-sol",
+        # "openai/gpt-6-astra",
+        # "anthropic/claude-fable-5.1",
         "anthropic/claude-sonnet-5.5",
-        "google/gemini-3.1-flash-lite",
-        "google/gemini-3.8-flash",
-        "meta-llama/llama-4-maverick",
-        "openai/gpt-5.6-luna",
-        "openai/gpt-5.6-sol",
         "openai/gpt-5.6-terra",
-        "openai/gpt-6.1-sol",
-        "openai/gpt-6-astra",
+        # "anthropic/claude-opus-5.5",
     ]
     for model in models:
         evaluate_group1(model)
