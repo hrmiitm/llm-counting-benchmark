@@ -80,3 +80,4 @@ td:not([style]) { background: #edf0f4; }
 .confidence-table .summary-metric { min-width: 135px; font-size: 21px; font-weight: 700; }
 .confidence-table .summary-metric small { color: inherit; }
 .confidence-table .outcome { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.confidence-table .column-formula { max-width: 180px; margin: 2px auto 0; font-size: 11px; line-height: 1.35; }

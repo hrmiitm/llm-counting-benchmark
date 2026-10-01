@@ -130,9 +130,11 @@ function renderGroup(id, group) {
     }
     return buttons;
   }
-  function sortHeader(text, key) {
+  function sortHeader(text, key, formula) {
     const th = el('th'); th.scope = 'col'; th.setAttribute('aria-sort', sortKey === key ? ascending ? 'ascending' : 'descending' : 'none');
-    th.append(el('span', text, 'column-title'), directionButtons('column', key, text,
+    th.append(el('span', text, 'column-title'));
+    if (formula) th.append(el('small', formula, 'column-formula'));
+    th.append(directionButtons('column', key, text,
       sortKey === key ? ascending ? 'asc' : 'desc' : null,
       direction => { sortKey = key; ascending = direction === 'asc'; }));
     return th;
@@ -212,7 +214,7 @@ function renderConfidenceGroup(id, group) {
   const title = el('h2', `Group ${id} · Confidence calibration`); title.id = `confidence-group-${id}`;
   section.setAttribute('aria-labelledby', title.id);
   heading.append(title, el('p', `${group.images.size} images · ${group.models.size} model configurations`));
-  const explanation = el('p', 'Confidence is the model’s stated probability that its count is exactly correct. “Deviation ÷ uncertainty” divides percentage deviation by 100% − confidence: above 1× means the observed deviation exceeded the stated uncertainty. It is an exploratory severity diagnostic, not a formal calibration score. Lower normalized error, calibration gap, Brier score, and ECE are better. Results are provisional because six images are too few for a dependable calibration estimate.', 'confidence-intro');
+  const explanation = el('p', 'Confidence is the model’s stated probability that its count is exactly correct. In the formulas, p = confidence ÷ 100 and y = 1 for an exact count or 0 otherwise. “Deviation ÷ uncertainty” divides percentage deviation by 100% − confidence: above 1× means the observed deviation exceeded the stated uncertainty. It is an exploratory severity diagnostic, not a formal calibration score. Lower normalized error, calibration gap, Brier score, and ECE are better. Results are provisional because six images are too few for a dependable calibration estimate.', 'confidence-intro');
   const images = [...group.images.values()];
   const models = [...group.models.values()];
   const metrics = new Map(models.map(model => [model, confidenceMetrics(model, images)]));
@@ -292,7 +294,13 @@ function renderConfidenceGroup(id, group) {
       const img = el('img'); img.src = link.href; img.alt = `Open ${item.label || item.image}`; img.loading = 'lazy'; link.append(img);
       th.prepend(link); th.append(el('small', `${item.image} · actual ${item['actual-count']}`)); head.append(th);
     }
-    for (const [label, key] of [['Normalized error', 'error'], ['Mean confidence', 'confidence'], ['Calibration gap', 'gap'], ['Brier score', 'brier'], ['ECE', 'ece']]) head.append(sortHeader(label, key));
+    for (const [label, key, formula] of [
+      ['Normalized error', 'error', 'mean(|pred − actual| ÷ actual) × 100'],
+      ['Mean confidence', 'confidence', 'mean(confidence)'],
+      ['Calibration gap', 'gap', '|mean confidence − exact accuracy|'],
+      ['Brier score', 'brier', 'mean((p − y)²)'],
+      ['ECE', 'ece', 'Σᵦ (nᵦ ÷ N) × |accuracyᵦ − confidenceᵦ|'],
+    ]) head.append(sortHeader(label, key, formula));
     thead.append(head); table.append(thead);
     const batches = new Map();
     for (const model of sortedModels) {
