@@ -21,6 +21,7 @@
     <div class="guide"><strong>Absolute percentage deviation · lower is better</strong><div class="color-legend"><div class="color-ramp" aria-hidden="true"></div><div class="scale-labels"><span>0% · exact</span><span>50%</span><span>100%+</span></div></div><span>— Missing · N/A when actual is zero</span></div>
     <p class="method">Percentage deviation = |predicted − actual| ÷ actual × 100. Normalized error is the mean deviation across images, with each image weighted equally. Missing predictions and zero actual counts are excluded; coverage appears beneath the score. Colors use the same continuous scale in both tables, capped at 100%; displayed values are not capped. “Predicted / actual (%)” shows the predicted fraction of the true count: 100% is exact, above 100% is an overcount.</p>
     <div id="results" aria-live="polite"></div>
+    <div id="confidence-results" aria-live="polite"></div>
     <noscript><p>Enable JavaScript to load the benchmark results.</p></noscript>
     <footer>Results loaded from <a href="eval/include.txt">eval/include.txt</a> and its listed JSON files. Inspired by <a href="https://sanand0.github.io/llmmath/">LLM Mental Math</a>.</footer>
   </main>

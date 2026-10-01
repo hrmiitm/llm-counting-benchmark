@@ -1,0 +1,182 @@
+[
+  {
+    "group": "1",
+    "id": "1",
+    "image": "813.jpg",
+    "label": "bottle caps",
+    "actual-count": 185,
+    "model": "openai/gpt-6-astra",
+    "model_temp": 0,
+    "model_count": 183
+  },
+  {
+    "group": "1",
+    "id": "2",
+    "image": "869.jpg",
+    "label": "books",
+    "actual-count": 250,
+    "model": "openai/gpt-6-astra",
+    "model_temp": 0,
+    "model_count": 264
+  },
+  {
+    "group": "1",
+    "id": "3",
+    "image": "1084.jpg",
+    "label": "buffaloes",
+    "actual-count": 198,
+    "model": "openai/gpt-6-astra",
+    "model_temp": 0,
+    "model_count": 151
+  },
+  {
+    "group": "1",
+    "id": "4",
+    "image": "2373.jpg",
+    "label": "bricks",
+    "actual-count": 130,
+    "model": "openai/gpt-6-astra",
+    "model_temp": 0,
+    "model_count": 138
+  },
+  {
+    "group": "1",
+    "id": "5",
+    "image": "2648.jpg",
+    "label": "cement bags",
+    "actual-count": 91,
+    "model": "openai/gpt-6-astra",
+    "model_temp": 0,
+    "model_count": 93
+  },
+  {
+    "group": "1",
+    "id": "6",
+    "image": "2933.jpg",
+    "label": "stamps",
+    "actual-count": 45,
+    "model": "openai/gpt-6-astra",
+    "model_temp": 0,
+    "model_count": 45
+  },
+  {
+    "group": "1",
+    "id": "1",
+    "image": "813.jpg",
+    "label": "bottle caps",
+    "actual-count": 185,
+    "model": "anthropic/claude-fable-5.1",
+    "model_temp": 0,
+    "model_count": 170
+  },
+  {
+    "group": "1",
+    "id": "2",
+    "image": "869.jpg",
+    "label": "books",
+    "actual-count": 250,
+    "model": "anthropic/claude-fable-5.1",
+    "model_temp": 0,
+    "model_count": 250
+  },
+  {
+    "group": "1",
+    "id": "3",
+    "image": "1084.jpg",
+    "label": "buffaloes",
+    "actual-count": 198,
+    "model": "anthropic/claude-fable-5.1",
+    "model_temp": 0,
+    "model_count": 230
+  },
+  {
+    "group": "1",
+    "id": "4",
+    "image": "2373.jpg",
+    "label": "bricks",
+    "actual-count": 130,
+    "model": "anthropic/claude-fable-5.1",
+    "model_temp": 0,
+    "model_count": 128
+  },
+  {
+    "group": "1",
+    "id": "5",
+    "image": "2648.jpg",
+    "label": "cement bags",
+    "actual-count": 91,
+    "model": "anthropic/claude-fable-5.1",
+    "model_temp": 0,
+    "model_count": 96
+  },
+  {
+    "group": "1",
+    "id": "6",
+    "image": "2933.jpg",
+    "label": "stamps",
+    "actual-count": 45,
+    "model": "anthropic/claude-fable-5.1",
+    "model_temp": 0,
+    "model_count": 54
+  },
+  {
+    "group": "1",
+    "id": "1",
+    "image": "813.jpg",
+    "label": "bottle caps",
+    "actual-count": 185,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 204
+  },
+  {
+    "group": "1",
+    "id": "2",
+    "image": "869.jpg",
+    "label": "books",
+    "actual-count": 250,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 218
+  },
+  {
+    "group": "1",
+    "id": "3",
+    "image": "1084.jpg",
+    "label": "buffaloes",
+    "actual-count": 198,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 347
+  },
+  {
+    "group": "1",
+    "id": "4",
+    "image": "2373.jpg",
+    "label": "bricks",
+    "actual-count": 130,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 60
+  },
+  {
+    "group": "1",
+    "id": "5",
+    "image": "2648.jpg",
+    "label": "cement bags",
+    "actual-count": 91,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 195
+  },
+  {
+    "group": "1",
+    "id": "6",
+    "image": "2933.jpg",
+    "label": "stamps",
+    "actual-count": 45,
+    "model": "meta-llama/llama-4-maverick",
+    "model_temp": 0,
+    "model_count": 37
+  }
+]

@@ -18,9 +18,9 @@ def evaluate(groups_to_evalutes, model, model_temp=0, data_path="data", output_p
         for index, item in enumerate(metadata, 1):
             print(f"{model} | {group_name} [{index}/{len(metadata)}] {item['image']} ...", flush=True)
             model_count = count_image(model, group_dir / item["image"], item["label"], model_temp)
-            sleep(15)
             results.append({**item, "model": model, "model_temp": model_temp, "model_count": model_count})
             print(f"  count: {model_count}", flush=True)
+            sleep(5)
 
         result_file = output / f"{group_name}_eval.json"
         previous = json.loads(result_file.read_text()) if result_file.exists() else []
@@ -41,8 +41,9 @@ if __name__ == "__main__":
         # "openai/gpt-5.6-sol",
         # "openai/gpt-6.1-sol",
         # "anthropic/claude-haiku-4.5",
-        "openai/gpt-6-astra",
-        "anthropic/claude-fable-5.1",
+        # "openai/gpt-6-astra",
+        # "anthropic/claude-fable-5.1",
+        "meta-llama/llama-4-maverick",
     ]
     for model in models:
         evaluate(["group1"], model)

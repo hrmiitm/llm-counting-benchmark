@@ -8,3 +8,5 @@ haiku_group1_eval.json
 haiku_group2_eval.json
 opus_group1_eval.json
 sol_group1_eval.json
+astra_fabel_llama_group1_eval.json
+
