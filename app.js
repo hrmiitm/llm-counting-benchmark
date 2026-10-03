@@ -1,419 +1,446 @@
-/* The manifest and result files are the only sources of benchmark data. */
 'use strict';
+
+const $ = selector => document.querySelector(selector);
+const number = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
+const count = value => Number.isInteger(value) && value >= 0 ? value : null;
+const mean = values => { const valid = values.filter(v => v !== null); return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null; };
 const compare = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
-const validCount = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
-function el(tag, text, className) {
-  const node = document.createElement(tag);
-  if (text !== undefined) node.textContent = text;
-  if (className) node.className = className;
-  return node;
+const fmt = (n, digits = 1) => n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: digits });
+const money = value => value === null ? '—' : `$${value.toFixed(value > 0 && value < .01 ? 6 : 4)}`;
+const metrics = [
+  { key: 'actual', label: 'Actual count', short: 'Actual', format: v => fmt(v, 0), show: true },
+  { key: 'percent', label: '% deviation', short: '% dev.', format: v => v === null ? '—' : `${fmt(v)}%`, show: true },
+  { key: 'ratio', label: 'Predicted / actual', short: 'Pred./act.', format: (v, p) => `${fmt(count(p?.model_count), 0)} / ${fmt(v, 0)}`, show: true },
+  { key: 'cost', label: 'Cost', short: 'Cost', format: money, show: true },
+  { key: 'time', label: 'Time', short: 'Time', format: v => v === null ? '—' : `${fmt(v)}s`, show: true },
+  { key: 'deviation', label: 'Deviation', short: 'Δ count', format: v => v === null ? '—' : `${v > 0 ? '+' : ''}${fmt(v, 0)}`, show: false },
+  { key: 'confidence', label: 'Confidence', short: 'Conf.', format: v => fmt(v, 3), show: true },
+];
+const state = { groups: [], warnings: [], files: 0, metric: 'percent', query: '', group: '', providerGrouping: '', chartModel: '', summarySort: { key: 'deviation', direction: 'asc' }, sorts: new Map() };
+
+function node(tag, text, className) {
+  const element = document.createElement(tag);
+  if (text !== undefined) element.textContent = text;
+  if (className) element.className = className;
+  return element;
 }
-function organize(sources, warnings, requireConfidence = false) {
-  const groups = new Map();
-  for (const { name, rows } of sources) {
-    rows.forEach((row, index) => {
-      if (!row || !/^(?:group)?\d+$/.test(String(row.group)) ||
-          typeof row.model !== 'string' || !row.model.trim() ||
-          typeof row.image !== 'string' || !row.image ||
-          !validCount(row['actual-count']) ||
-          (requireConfidence && !(typeof row.confidence === 'number' && Number.isFinite(row.confidence) && row.confidence >= 0 && row.confidence <= 100))) {
-        warnings.push(`${name}, row ${index + 1}: invalid group, model, image, or actual count; skipped.`);
-        return;
-      }
-      const id = String(row.group).replace(/^group/, '');
-      if (!groups.has(id)) groups.set(id, { images: new Map(), models: new Map() });
-      const group = groups.get(id);
-      if (group.images.has(row.image) && group.images.get(row.image)['actual-count'] !== row['actual-count']) {
-        warnings.push(`${name}, row ${index + 1}: conflicting actual count for ${row.image}; skipped.`);
-        return;
-      }
-      group.images.set(row.image, row);
-      // Separate temperatures; later manifest entries replace duplicate predictions.
-      const key = JSON.stringify([row.model, row.model_temp ?? null]);
-      if (!group.models.has(key)) group.models.set(key, {
-        name: row.model, temperature: row.model_temp,
-        provider: row.model.includes('/') ? row.model.split('/')[0] : 'Other', predictions: new Map(),
-      });
-      group.models.get(key).predictions.set(row.image, row);
-    });
+function safePath(path, root = '') {
+  return typeof path === 'string' && !path.startsWith('/') && !/[\\?#]/.test(path)
+    && !path.split('/').some(part => part === '..' || part === '.' || !part)
+    && (!root || path.startsWith(root));
+}
+function jsonURL(path) { return new URL(path.split('/').map(encodeURIComponent).join('/'), document.baseURI); }
+async function fetchJSON(path) {
+  const response = await fetch(jsonURL(path), { cache: 'no-store' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+// Local directory listings discover additions on refresh. Static hosting uses a generated index.
+async function discover() {
+  const base = new URL('./', document.baseURI);
+  async function crawl(folder, depth = 0) {
+    if (depth > 12) throw new Error('Directory nesting exceeds 12 levels.');
+    const response = await fetch(new URL(folder, base), { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Directory listing unavailable (${response.status}).`);
+    const document = new DOMParser().parseFromString(await response.text(), 'text/html');
+    if (!document.title.startsWith('Directory listing for')) throw new Error('Server does not expose directory listings.');
+    const files = [], folders = [];
+    for (const link of document.querySelectorAll('a[href]')) {
+      const url = new URL(link.getAttribute('href'), new URL(folder, base));
+      if (url.origin !== base.origin || !url.pathname.startsWith(new URL(folder, base).pathname)) continue;
+      const path = decodeURIComponent(url.pathname.slice(base.pathname.length));
+      if (path === folder) continue;
+      if (path.endsWith('/') && safePath(path.slice(0, -1), 'eval2/')) folders.push(path);
+      else if (safePath(path, 'eval2/') && path.endsWith('.json') && path !== 'eval2/manifest.json') files.push(path);
+    }
+    const children = await Promise.allSettled([...new Set(folders)].map(folder => crawl(folder, depth + 1)));
+    for (const result of children) {
+      if (result.status === 'fulfilled') files.push(...result.value);
+      else state.warnings.push(result.reason.message);
+    }
+    return files;
   }
-  return groups;
+  try { return [...new Set(await crawl('eval2/'))].sort(compare); }
+  catch {
+    const manifest = await fetchJSON('eval2/manifest.json');
+    if (!Array.isArray(manifest.files)) throw new Error('Invalid eval2/manifest.json; run python3 build_manifest.py.');
+    const valid = manifest.files.filter(path => safePath(path, 'eval2/') && path.endsWith('.json') && path !== 'eval2/manifest.json');
+    if (valid.length !== manifest.files.length) state.warnings.push('Invalid paths in the manifest were ignored.');
+    return [...new Set(valid)].sort(compare);
+  }
 }
-const validConfidence = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100;
-// Fixed domain across both tables: 0% green, 50% yellow, 100%+ red.
-// Blend slightly toward a light neutral to soften saturation and dark extremes.
-const errorColor = value => d3.interpolateRgb(
-  d3.interpolateRdYlGn(1 - Math.min(1, Math.max(0, value))), '#f2f4f7',
-)(0.18);
-function shade(node, value) {
-  if (value === null) return;
-  const color = d3.rgb(errorColor(value));
-  node.style.backgroundColor = color.formatRgb();
-  const linear = channel => { const c = channel / 255; return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; };
-  const luminance = .2126 * linear(color.r) + .7152 * linear(color.g) + .0722 * linear(color.b);
-  node.style.color = luminance > .179 ? '#000' : '#fff';
+
+function identity(row) {
+  const group = String(row.group ?? '').replace(/^group/, '');
+  if (!/^[\w-]+$/.test(group) || !safePath(row.image)) return null;
+  return { group, key: `${group}/${row.image}` };
 }
-function deviation(model, item) {
-  const predicted = model.predictions.get(item.image)?.model_count;
-  return validCount(predicted) && item['actual-count'] > 0 ? Math.abs(predicted - item['actual-count']) / item['actual-count'] : null;
+function organize(sources) {
+  const images = new Map(), configurations = new Map();
+  for (const { path, data } of sources) {
+    const rows = Array.isArray(data) ? data : data?.results;
+    if (!Array.isArray(rows)) { state.warnings.push(`${path}: no result or metadata array found.`); continue; }
+    for (const row of rows) {
+      if (!row || typeof row !== 'object') continue;
+      const id = identity(row);
+      if (!id) { state.warnings.push(`${path}: invalid group/image identifier.`); continue; }
+      if (!images.has(id.key)) images.set(id.key, { ...id, image: row.image, id: row.id ?? row.image, label: row.label ?? row.image, actual: null, conflict: false });
+      const image = images.get(id.key);
+      if (row.id !== undefined) image.id = row.id;
+      if (row.label) image.label = row.label;
+      const actual = count(row['actual-count']);
+      if (actual !== null) {
+        if (image.actual !== null && image.actual !== actual) {
+          image.conflict = true;
+          state.warnings.push(`${id.key}: conflicting ground truths; deviation is unavailable.`);
+        }
+        image.actual = actual;
+      }
+      const model = row.model ?? data.model;
+      if (typeof model !== 'string' || !model.trim()) continue; // Ground truth only.
+      const temp = 'model_temp' in row ? row.model_temp : 'model_temp' in data ? data.model_temp : 'unspecified';
+      const reasoning = row.reasoning ?? data.reasoning;
+      const effort = reasoning?.enabled === false || data.reasoning_enabled === false ? 'off'
+        : row.reasoning_effort ?? reasoning?.effort ?? (reasoning?.enabled === true || data.reasoning_enabled === true ? 'on' : 'unspecified');
+      const provider = row.provider_endpoint ?? data.provider_endpoint ?? row.response_provider ?? 'unspecified';
+      const maxTokens = row.max_tokens ?? data.max_tokens ?? null;
+      const prompt = row.prompt_version ?? data.prompt_version ?? data.prompt ?? data.prompt_template ?? '';
+      const settings = { tools: row.tools ?? data.tools, toolChoice: row.tool_choice ?? data.tool_choice, fallbacks: row.allow_fallbacks ?? data.allow_fallbacks };
+      const configKey = JSON.stringify([model, temp, effort, provider, maxTokens, prompt, reasoning?.exclude ?? null, settings]);
+      if (!configurations.has(configKey)) configurations.set(configKey, {
+        key: configKey, name: model, vendor: model.includes('/') ? model.split('/')[0] : 'Other',
+        temp, effort, provider, maxTokens, prompt, settings, predictions: new Map(),
+      });
+      const config = configurations.get(configKey);
+      const stamp = row.finished_at_utc ?? row.started_at_utc ?? row.run_id ?? data.run_id ?? '';
+      const parsedTime = Date.parse(stamp);
+      const timestamp = Number.isFinite(parsedTime) ? parsedTime : 0;
+      const previous = config.predictions.get(id.key);
+      // Sorted paths provide a deterministic tiebreaker; never add duplicate predictions/costs.
+      if (!previous || timestamp >= previous.timestamp) {
+        let confidence = number(row.confidence);
+        if ((row.confidence_scale ?? data.confidence_scale) === '0-100') confidence = confidence === null ? null : confidence / 100;
+        if (confidence !== null && (confidence < 0 || confidence > 1)) {
+          state.warnings.push(`${path}: confidence outside 0–1 for ${row.image}; displayed as missing.`);
+          confidence = null;
+        }
+        const prediction = { ...row, confidence, timestamp, source: path };
+        prediction.status ??= count(row.model_count) === null ? 'missing' : 'success';
+        config.predictions.set(id.key, prediction);
+      }
+    }
+  }
+  const groupIds = new Set();
+  for (const config of configurations.values()) for (const key of config.predictions.keys()) groupIds.add(images.get(key).group);
+  return [...groupIds].sort(compare).map(id => ({
+    id, images: [...images.values()].filter(image => image.group === id).sort((a, b) => compare(a.id, b.id)),
+    models: [...configurations.values()].filter(model => [...model.predictions.keys()].some(key => images.get(key).group === id)),
+  }));
 }
-function mean(values) {
-  const valid = values.filter(value => value !== null);
-  return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
+function prediction(model, image) { return model.predictions.get(image.key); }
+function configurationName(model, short = false) {
+  const matches = [...new Map(state.groups.flatMap(group => group.models).map(m => [m.key, m])).values()]
+    .filter(m => m.name === model.name).sort((a, b) => compare(a.key, b.key));
+  const name = short ? model.name.slice(model.name.indexOf('/') + 1) : model.name;
+  return `${name}${matches.length > 1 ? ` [${matches.findIndex(m => m.key === model.key) + 1}]` : ''}`;
 }
-function confidenceMetrics(model, images) {
-  const samples = images.map(item => model.predictions.get(item.image)).filter(row => row && validCount(row.model_count) && validConfidence(row.confidence));
-  if (!samples.length) return null;
-  const points = samples.map(row => ({ probability: row.confidence / 100, correct: Number(row.model_count === row['actual-count']) }));
-  const accuracy = mean(points.map(point => point.correct));
-  const confidence = mean(points.map(point => point.probability));
-  const brier = mean(points.map(point => (point.probability - point.correct) ** 2));
-  const bins = Array.from({ length: 10 }, () => []);
-  points.forEach(point => bins[Math.min(9, Math.floor(point.probability * 10))].push(point));
-  const ece = bins.reduce((total, bin) => {
-    if (!bin.length) return total;
-    return total + bin.length / points.length * Math.abs(mean(bin.map(point => point.probability)) - mean(bin.map(point => point.correct)));
-  }, 0);
-  return { count: points.length, accuracy, confidence, gap: Math.abs(confidence - accuracy), brier, ece };
+function value(metric, model, image) {
+  const p = prediction(model, image), actual = image.conflict ? null : image.actual;
+  const predicted = p?.status === 'success' ? count(p.model_count) : null;
+  if (metric === 'actual' || metric === 'ratio') return actual;
+  if (metric === 'cost') return number(p?.cost_usd ?? p?.usage?.cost);
+  if (metric === 'time') return number(p?.latency_seconds);
+  if (metric === 'confidence') return predicted === null ? null : number(p.confidence);
+  if (predicted === null || actual === null) return null;
+  if (metric === 'deviation') return predicted - actual;
+  return actual > 0 ? Math.abs(predicted - actual) / actual * 100 : null;
 }
-// Missing values stay last in both directions.
-function order(a, b, ascending) {
+function sortValue(metric, model, image) {
+  if (metric === 'ratio') {
+    const p = prediction(model, image), actual = value('actual', model, image);
+    return p?.status === 'success' && actual > 0 && count(p.model_count) !== null ? p.model_count / actual : null;
+  }
+  return value(metric, model, image);
+}
+function totals(model, images) {
+  const rows = images.map(image => prediction(model, image)).filter(Boolean);
+  const costs = rows.map(row => ['skipped', 'missing'].includes(row.status) ? 0 : number(row.cost_usd ?? row.usage?.cost));
+  const calls = rows.filter(row => row.status !== 'skipped' && row.status !== 'missing');
+  const times = calls.map(row => number(row.latency_seconds));
+  const deviations = images.map(image => value('percent', model, image));
+  return {
+    deviation: mean(deviations), count: deviations.filter(v => v !== null).length,
+    knownCost: costs.some(v => v !== null) ? costs.reduce((sum, v) => sum + (v ?? 0), 0) : null,
+    unknown: costs.filter(v => v === null).length,
+    meanCost: mean(calls.map(row => number(row.cost_usd ?? row.usage?.cost))),
+    meanTime: mean(times),
+    totalTime: times.some(v => v !== null) ? times.reduce((sum, v) => sum + (v ?? 0), 0) : null,
+    unknownTime: times.filter(v => v === null).length,
+    failed: rows.filter(row => row.status === 'failed' || row.status === 'skipped').length,
+  };
+}
+function order(a, b, direction) {
   if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
-  return (typeof a === 'number' ? a - b : compare(a, b)) * (ascending ? 1 : -1);
+  return (typeof a === 'number' ? a - b : compare(a, b)) * (direction === 'asc' ? 1 : -1);
 }
-function renderGroup(id, group) {
-  const section = el('section');
-  const heading = el('div', undefined, 'section-heading');
-  const title = el('h2', `Group ${id}`); title.id = `group-${id}`;
-  section.setAttribute('aria-labelledby', title.id);
-  heading.append(title, el('p', `${group.images.size} images · ${group.models.size} model configurations`));
-  section.append(heading);
-  const images = [...group.images.values()];
-  const models = [...group.models.values()];
-  const scores = new Map(models.map(model => [model, mean(images.map(item => deviation(model, item)))]));
-  const imageScores = new Map(images.map(item => [item.image, mean(models.map(model => deviation(model, item)))]));
-  let sortKey = 'error'; let ascending = true;
-  const controls = el('fieldset'); controls.append(el('legend', 'Show in cells'));
-  const modes = new Map();
-  for (const [key, text] of [['deviation', 'Percentage deviation'], ['ratio', 'Predicted / actual'], ['percentage', 'Predicted / actual (%)'], ['predicted', 'Predicted count'], ['difference', 'Difference (actual − predicted)']]) {
-    const label = el('label'); const input = el('input');
-    input.type = 'checkbox'; input.checked = key === 'deviation' || key === 'ratio'; input.name = key;
-    modes.set(key, input); label.append(input, document.createTextNode(text)); controls.append(label);
-  }
-  const sorting = el('div', undefined, 'sorting');
-  const groupedLabel = el('label'); const grouped = el('input'); grouped.type = 'checkbox';
-  groupedLabel.append(grouped, document.createTextNode('Group models by provider'));
-  const columnLabel = el('label', 'Image order '); const columns = el('select'); columns.setAttribute('aria-label', 'Image order');
-  for (const [value, text] of [['original', 'Original order'], ['easy', 'Lowest mean error first'], ['hard', 'Highest mean error first'], ['row', 'Selected model: lowest error first'], ['row-desc', 'Selected model: highest error first']]) {
-    const option = el('option', text); option.value = value; columns.append(option);
-  }
-  columnLabel.append(columns);
-  const modelLabel = el('label', 'Order images for '); const modelSelect = el('select'); modelSelect.setAttribute('aria-label', 'Order images for');
-  models.forEach((model, index) => { const option = el('option', `${model.name} (T ${model.temperature ?? '—'})`); option.value = index; modelSelect.append(option); });
-  modelLabel.append(modelSelect); modelLabel.hidden = true;
-  sorting.append(groupedLabel, columnLabel, modelLabel);
-  const wrap = el('div', undefined, 'table-wrap'); wrap.tabIndex = 0;
-  wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', `Group ${id} results, scroll horizontally for all images`);
-  section.append(controls, sorting, wrap);
-  function directionButtons(axis, key, label, activeDirection, onSort) {
-    const buttons = el('div', undefined, 'sort-directions');
-    for (const [direction, text] of [['asc', '↑ Asc'], ['desc', '↓ Desc']]) {
-      const button = el('button', text, 'direction-button'); button.type = 'button';
-      button.dataset.axis = axis; button.dataset.key = key; button.dataset.direction = direction;
-      button.setAttribute('aria-label', `Sort ${axis === 'column' ? 'models' : 'images'} by ${label}, ${direction === 'asc' ? 'ascending' : 'descending'}`);
-      button.setAttribute('aria-pressed', String(activeDirection === direction));
-      button.addEventListener('click', () => {
-        onSort(direction); draw();
-        [...wrap.querySelectorAll('.direction-button')].find(node => node.dataset.axis === axis && node.dataset.key === String(key) && node.dataset.direction === direction)?.focus({ preventScroll: true });
-      });
-      buttons.append(button);
-    }
-    return buttons;
-  }
-  function sortHeader(text, key, formula) {
-    const th = el('th'); th.scope = 'col'; th.setAttribute('aria-sort', sortKey === key ? ascending ? 'ascending' : 'descending' : 'none');
-    th.append(el('span', text, 'column-title'));
-    if (formula) th.append(el('small', formula, 'column-formula'));
-    th.append(directionButtons('column', key, text,
-      sortKey === key ? ascending ? 'asc' : 'desc' : null,
-      direction => { sortKey = key; ascending = direction === 'asc'; }));
-    return th;
-  }
-  function draw() {
-    modelLabel.hidden = !columns.value.startsWith('row');
-    const orderedImages = [...images].sort((a, b) => {
-      const mode = columns.value;
-      if (mode === 'original') return compare(a.id ?? a.image, b.id ?? b.image);
-      const score = item => mode.startsWith('row') ? deviation(models[Number(modelSelect.value)], item) : imageScores.get(item.image);
-      return order(score(a), score(b), mode === 'easy' || mode === 'row') || compare(a.id ?? a.image, b.id ?? b.image);
-    });
-    const sortedModels = [...models].sort((a, b) => {
-      const value = model => sortKey === 'model' ? model.name : sortKey === 'error' ? scores.get(model) : deviation(model, group.images.get(sortKey));
-      return order(value(a), value(b), ascending) || compare(a.name, b.name) || compare(a.temperature, b.temperature);
-    });
-    const table = el('table');
-    table.append(el('caption', `Group ${id} · Column buttons sort models${grouped.checked ? ' within each provider' : ''}. Row buttons sort images by that model’s percentage deviation.`));
-    const thead = el('thead'); const head = el('tr'); head.append(sortHeader('Model', 'model'));
-    for (const item of orderedImages) {
-      const th = sortHeader(item.label || item.image, item.image);
-      const link = el('a', undefined, 'image-link'); link.href = `data/group${id}/${encodeURIComponent(item.image)}`; link.target = '_blank'; link.rel = 'noopener';
-      const img = el('img'); img.src = link.href; img.alt = `Open ${item.label || item.image}`; img.loading = 'lazy'; link.append(img);
-      th.prepend(link); th.append(el('small', `${item.image} · actual ${item['actual-count']}`)); head.append(th);
-    }
-    head.append(sortHeader('Normalized error', 'error')); thead.append(head); table.append(thead);
-    const batches = new Map();
-    for (const model of sortedModels) {
-      const key = grouped.checked ? model.provider : '';
-      if (!batches.has(key)) batches.set(key, []);
-      batches.get(key).push(model);
-    }
-    const entries = [...batches]; if (grouped.checked) entries.sort(([a], [b]) => compare(a, b));
-    for (const [provider, batch] of entries) {
-      const body = el('tbody');
-      if (provider) {
-        const tr = el('tr', undefined, 'provider'); const th = el('th', provider); th.colSpan = images.length + 2; th.scope = 'rowgroup'; tr.append(th); body.append(tr);
-      }
-      for (const model of batch) {
-        const tr = el('tr'); const name = el('th', model.name, 'model'); name.scope = 'row';
-        name.append(el('small', `${model.provider} · Temperature ${model.temperature ?? '—'}`));
-        const modelIndex = models.indexOf(model);
-        name.append(directionButtons('row', modelIndex, `${model.name} (temperature ${model.temperature ?? 'unspecified'})`,
-          columns.value.startsWith('row') && Number(modelSelect.value) === modelIndex ? columns.value === 'row' ? 'asc' : 'desc' : null,
-          direction => { modelSelect.value = String(modelIndex); columns.value = direction === 'asc' ? 'row' : 'row-desc'; }));
-        tr.append(name);
-        for (const item of orderedImages) {
-          const row = model.predictions.get(item.image); const td = el('td'); const error = deviation(model, item);
-          if (!row || !validCount(row.model_count)) { td.textContent = '—'; td.title = 'No valid prediction'; }
-          else {
-            const predicted = row.model_count; const actual = item['actual-count']; const diff = actual - predicted;
-            shade(td, error);
-            td.title = `Predicted ${predicted}; actual ${actual}; ${predicted === actual ? 'exact count' : predicted > actual ? 'overcount' : 'undercount'}; absolute deviation ${error === null ? 'undefined (actual is zero)' : `${(100 * error).toFixed(2)}%`}`;
-            if (modes.get('deviation').checked) td.append(el('span', error === null ? 'N/A' : `${(100 * error).toFixed(1)}%`, 'metric'));
-            if (modes.get('ratio').checked) td.append(el('span', `${predicted} / ${actual}`, 'metric'));
-            if (modes.get('percentage').checked) td.append(el('span', actual > 0 ? `${(100 * predicted / actual).toFixed(1)}% of actual` : 'N/A (actual = 0)', 'metric'));
-            if (modes.get('predicted').checked) td.append(el('span', `Pred: ${predicted}`, 'metric'));
-            if (modes.get('difference').checked) td.append(el('span', `Δ ${diff > 0 ? '+' : ''}${diff}`, 'metric'));
-            if (!td.childNodes.length) { td.textContent = '·'; td.setAttribute('aria-label', td.title); }
-          }
-          tr.append(td);
-        }
-        const score = scores.get(model);
-        const count = images.filter(item => deviation(model, item) !== null).length;
-        const normalized = el('td', score === null ? '—' : `${(100 * score).toFixed(1)}%`, 'normalized'); shade(normalized, score);
-        normalized.append(el('small', 'mean deviation'), el('small', `${count}/${images.length} evaluated`)); tr.append(normalized); body.append(tr);
-      }
-      table.append(body);
-    }
-    wrap.replaceChildren(table);
-  }
-  controls.addEventListener('change', draw); sorting.addEventListener('change', draw); draw(); return section;
+function shade(element, deviation) {
+  if (deviation === null) return;
+  const t = Math.max(0, Math.min(deviation / 100, 1));
+  const stops = [[182, 224, 196], [247, 227, 160], [237, 175, 167]];
+  const local = t < .5 ? t * 2 : (t - .5) * 2, a = t < .5 ? stops[0] : stops[1], b = t < .5 ? stops[1] : stops[2];
+  element.style.backgroundColor = `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * local)).join(',')})`;
 }
-function renderConfidenceGroup(id, group) {
-  const section = el('section');
-  const heading = el('div', undefined, 'section-heading');
-  const title = el('h2', `Group ${id} · Confidence calibration`); title.id = `confidence-group-${id}`;
-  section.setAttribute('aria-labelledby', title.id);
-  heading.append(title, el('p', `${group.images.size} images · ${group.models.size} model configurations`));
-  const explanation = el('p', 'Confidence is the model’s stated probability that its count is exactly correct. In the formulas, p = confidence ÷ 100 and y = 1 for an exact count or 0 otherwise. “Deviation ÷ uncertainty” divides percentage deviation by 100% − confidence: above 1× means the observed deviation exceeded the stated uncertainty. It is an exploratory severity diagnostic, not a formal calibration score. Lower normalized error, calibration gap, Brier score, and ECE are better. Results are provisional because six images are too few for a dependable calibration estimate.', 'confidence-intro');
-  const images = [...group.images.values()];
-  const models = [...group.models.values()];
-  const metrics = new Map(models.map(model => [model, confidenceMetrics(model, images)]));
-  const scores = new Map(models.map(model => [model, mean(images.map(item => deviation(model, item)))]));
-  const imageScores = new Map(images.map(item => [item.image, mean(models.map(model => deviation(model, item)))]));
-  let sortKey = 'error'; let ascending = true;
-  const controls = el('fieldset'); controls.append(el('legend', 'Show in cells'));
-  const modes = new Map();
-  for (const [key, text, checked] of [
-    ['deviation', 'Percentage deviation', true], ['ratio', 'Predicted / actual', true],
-    ['percentage', 'Predicted / actual (%)', false], ['predicted', 'Predicted count', false],
-    ['difference', 'Difference (actual − predicted)', false], ['confidence', 'Confidence', true],
-    ['calibration', 'Individual calibration error', false], ['uncertainty-ratio', 'Deviation ÷ uncertainty', false],
-  ]) {
-    const label = el('label'); const input = el('input'); input.type = 'checkbox'; input.checked = checked; input.name = key;
-    modes.set(key, input); label.append(input, document.createTextNode(text)); controls.append(label);
-  }
-  const sorting = el('div', undefined, 'sorting');
-  const groupedLabel = el('label'); const grouped = el('input'); grouped.type = 'checkbox';
-  groupedLabel.append(grouped, document.createTextNode('Group models by provider'));
-  const columnLabel = el('label', 'Image order '); const columns = el('select'); columns.setAttribute('aria-label', 'Confidence-table image order');
-  for (const [value, text] of [['original', 'Original order'], ['easy', 'Lowest mean error first'], ['hard', 'Highest mean error first'], ['row', 'Selected model: lowest error first'], ['row-desc', 'Selected model: highest error first']]) {
-    const option = el('option', text); option.value = value; columns.append(option);
-  }
-  columnLabel.append(columns);
-  const modelLabel = el('label', 'Order images for '); const modelSelect = el('select'); modelSelect.setAttribute('aria-label', 'Confidence-table model for image order');
-  models.forEach((model, index) => { const option = el('option', `${model.name} (T ${model.temperature ?? '—'})`); option.value = index; modelSelect.append(option); });
-  modelLabel.append(modelSelect); modelLabel.hidden = true;
-  sorting.append(groupedLabel, columnLabel, modelLabel);
-  const wrap = el('div', undefined, 'table-wrap'); wrap.tabIndex = 0;
-  wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', `Group ${id} confidence calibration results, scroll horizontally for all columns`);
-  function directionButtons(axis, key, label, activeDirection, onSort) {
-    const buttons = el('div', undefined, 'sort-directions');
-    for (const [direction, text] of [['asc', '↑ Asc'], ['desc', '↓ Desc']]) {
-      const button = el('button', text, 'direction-button'); button.type = 'button';
-      button.dataset.axis = `confidence-${axis}`; button.dataset.key = key; button.dataset.direction = direction;
-      button.setAttribute('aria-label', `Sort confidence ${axis === 'column' ? 'models' : 'images'} by ${label}, ${direction === 'asc' ? 'ascending' : 'descending'}`);
-      button.setAttribute('aria-pressed', String(activeDirection === direction));
-      button.addEventListener('click', () => {
-        onSort(direction); draw();
-        [...wrap.querySelectorAll('.direction-button')].find(node => node.dataset.axis === `confidence-${axis}` && node.dataset.key === String(key) && node.dataset.direction === direction)?.focus({ preventScroll: true });
-      });
-      buttons.append(button);
-    }
-    return buttons;
-  }
-  function sortHeader(text, key) {
-    const th = el('th'); th.scope = 'col'; th.setAttribute('aria-sort', sortKey === key ? ascending ? 'ascending' : 'descending' : 'none');
-    th.append(el('span', text, 'column-title'), directionButtons('column', key, text,
-      sortKey === key ? ascending ? 'asc' : 'desc' : null,
-      direction => { sortKey = key; ascending = direction === 'asc'; }));
-    return th;
-  }
-  function draw() {
-    modelLabel.hidden = !columns.value.startsWith('row');
-    const orderedImages = [...images].sort((a, b) => {
-      const mode = columns.value;
-      if (mode === 'original') return compare(a.id ?? a.image, b.id ?? b.image);
-      const score = item => mode.startsWith('row') ? deviation(models[Number(modelSelect.value)], item) : imageScores.get(item.image);
-      return order(score(a), score(b), mode === 'easy' || mode === 'row') || compare(a.id ?? a.image, b.id ?? b.image);
+function metricLine(label, text, primary = false) {
+  const line = node('div', undefined, `metric${primary ? ' primary' : ''}`);
+  line.append(node('span', label, 'metric-label'), node('span', text, 'metric-value'));
+  return line;
+}
+function arrows(label, selected, callback) {
+  const container = node('div', undefined, 'arrows');
+  for (const [direction, symbol] of [['asc', '↑'], ['desc', '↓']]) {
+    const button = node('button', symbol); button.type = 'button';
+    button.title = `${label} · ${direction === 'asc' ? 'ascending' : 'descending'}`;
+    button.setAttribute('aria-label', button.title); button.setAttribute('aria-pressed', String(selected === direction));
+    button.addEventListener('click', () => {
+      const scope = button.closest('[data-sort-scope]')?.dataset.sortScope;
+      callback(direction);
+      const section = [...document.querySelectorAll('[data-sort-scope]')].find(section => section.dataset.sortScope === scope);
+      [...(section?.querySelectorAll('.arrows button') ?? [])].find(next => next.getAttribute('aria-label') === button.title)?.focus({ preventScroll: true });
     });
-    const sortedModels = [...models].sort((a, b) => {
-      const value = model => {
-        if (sortKey === 'model') return model.name;
-        if (sortKey === 'error') return scores.get(model);
-        if (['confidence', 'gap', 'brier', 'ece'].includes(sortKey)) return metrics.get(model)?.[sortKey] ?? null;
-        return deviation(model, group.images.get(sortKey));
-      };
-      return order(value(a), value(b), ascending) || compare(a.name, b.name) || compare(a.temperature, b.temperature);
-    });
-    const table = el('table', undefined, 'confidence-table');
-    table.append(el('caption', `Group ${id} confidence · Exact correctness is 1 only when predicted count equals actual count. ECE uses 10 confidence bins.`));
-    const thead = el('thead'); const head = el('tr'); head.append(sortHeader('Model', 'model'));
-    for (const item of orderedImages) {
-      const th = sortHeader(item.label || item.image, item.image);
-      const link = el('a', undefined, 'image-link'); link.href = `data/group${id}/${encodeURIComponent(item.image)}`; link.target = '_blank'; link.rel = 'noopener';
-      const img = el('img'); img.src = link.href; img.alt = `Open ${item.label || item.image}`; img.loading = 'lazy'; link.append(img);
-      th.prepend(link); th.append(el('small', `${item.image} · actual ${item['actual-count']}`)); head.append(th);
+    container.append(button);
+  }
+  return container;
+}
+function imageURL(image) {
+  return jsonURL(`data/group${image.group}/${image.image}`);
+}
+function renderGroup(group) {
+  const section = node('section', undefined, 'group');
+  section.dataset.group = group.id;
+  section.dataset.sortScope = `group:${group.id}`;
+  const models = group.models.filter(model => `${model.name} ${model.provider}`.toLowerCase().includes(state.query));
+  if (!models.length) return null;
+  const sorts = state.sorts.get(group.id) ?? { rows: { key: 'overall', direction: 'asc' }, columns: null };
+  state.sorts.set(group.id, sorts);
+  const stats = new Map(models.map(model => [model.key, totals(model, group.images)]));
+  const imageList = [...group.images], modelList = [...models];
+  if (sorts.columns) {
+    const selected = group.models.find(model => model.key === sorts.columns.model);
+    if (selected) imageList.sort((a, b) => order(sortValue(state.metric, selected, a), sortValue(state.metric, selected, b), sorts.columns.direction) || compare(a.id, b.id));
+  }
+  function rowScore(model) {
+    const key = sorts.rows.key;
+    if (key === 'name') return model.name;
+    if (key === 'cost') return stats.get(model.key).knownCost;
+    if (key === 'overall') return stats.get(model.key).deviation;
+    const image = group.images.find(image => image.key === key);
+    return image ? sortValue(state.metric, model, image) : null;
+  }
+  modelList.sort((a, b) => (state.providerGrouping ? order(a.vendor, b.vendor, state.providerGrouping) : 0) || order(rowScore(a), rowScore(b), sorts.rows.direction) || compare(a.name, b.name));
+  const heading = node('div', undefined, 'group-heading');
+  heading.append(node('h2', `Group ${group.id}`), node('p', `${models.length} configurations · ${group.images.length} images`));
+  const wrap = node('div', undefined, 'table-wrap'); wrap.tabIndex = 0;
+  wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', `Group ${group.id} results; scroll to explore`);
+  const compact = matchMedia('(max-width:650px)').matches;
+  const table = node('table'); table.style.minWidth = `${(compact ? 168 : 240) + imageList.length * 155 + 174}px`;
+  table.setAttribute('aria-label', `Group ${group.id} model counting comparison`);
+  const thead = node('thead'), headers = node('tr');
+  function sortRows(key, direction) { sorts.rows = { key, direction }; redraw(); }
+  function sortColumns(model, direction) { sorts.columns = { model, direction }; redraw(); }
+  function redraw() {
+    const x = wrap.scrollLeft, y = wrap.scrollTop;
+    const replacement = renderGroup(group); section.replaceWith(replacement);
+    const next = replacement.querySelector('.table-wrap'); next.scrollLeft = x; next.scrollTop = y;
+  }
+  const modelHeader = node('th'); modelHeader.scope = 'col';
+  modelHeader.append(node('span', 'Model / configuration'), arrows('Sort models by name', sorts.rows.key === 'name' ? sorts.rows.direction : null, direction => sortRows('name', direction)));
+  headers.append(modelHeader);
+  for (const image of imageList) {
+    const th = node('th'); th.scope = 'col';
+    th.dataset.image = image.key;
+    if (sorts.rows.key === image.key) th.setAttribute('aria-sort', sorts.rows.direction === 'asc' ? 'ascending' : 'descending');
+    const link = node('a', undefined, 'image-link'); link.href = imageURL(image); link.target = '_blank'; link.rel = 'noopener';
+    const img = node('img'); img.src = imageURL(image); img.alt = image.label; img.loading = 'lazy';
+    const text = node('div', undefined, 'image-label'); text.append(node('span', image.label), node('div', image.image, 'image-id'));
+    link.append(img, text); th.append(link);
+    if (metrics.find(m => m.key === 'actual').show) {
+      const actual = node('div', 'Actual ', 'actual'); actual.append(node('strong', fmt(image.conflict ? null : image.actual, 0))); th.append(actual);
     }
-    for (const [label, key, formula] of [
-      ['Normalized error', 'error', 'mean(|pred − actual| ÷ actual) × 100'],
-      ['Mean confidence', 'confidence', 'mean(confidence)'],
-      ['Calibration gap', 'gap', '|mean confidence − exact accuracy|'],
-      ['Brier score', 'brier', 'mean((p − y)²)'],
-      ['ECE', 'ece', 'Σᵦ (nᵦ ÷ N) × |accuracyᵦ − confidenceᵦ|'],
-    ]) head.append(sortHeader(label, key, formula));
-    thead.append(head); table.append(thead);
-    const batches = new Map();
-    for (const model of sortedModels) {
-      const key = grouped.checked ? model.provider : '';
-      if (!batches.has(key)) batches.set(key, []);
-      batches.get(key).push(model);
+    th.append(arrows(`Sort models by ${image.label}: ${state.metric}`, sorts.rows.key === image.key ? sorts.rows.direction : null, direction => sortRows(image.key, direction)));
+    headers.append(th);
+  }
+  const overallHeader = node('th'); overallHeader.scope = 'col';
+  overallHeader.append(node('div', 'Overall'), arrows('Sort models by mean deviation', sorts.rows.key === 'overall' ? sorts.rows.direction : null, direction => sortRows('overall', direction)));
+  const costSort = node('div', undefined, 'actual'); costSort.append(node('span', 'Total cost '), arrows('Sort models by total known cost', sorts.rows.key === 'cost' ? sorts.rows.direction : null, direction => sortRows('cost', direction))); overallHeader.append(costSort);
+  headers.append(overallHeader); thead.append(headers); table.append(thead);
+  const tbody = node('tbody');
+  let lastVendor = null;
+  for (const model of modelList) {
+    if (state.providerGrouping && model.vendor !== lastVendor) {
+      const providerRow = node('tr', undefined, 'provider-heading');
+      providerRow.dataset.provider = model.vendor;
+      const providerCell = node('th', `${model.vendor} · ${modelList.filter(m => m.vendor === model.vendor).length} models`);
+      providerCell.colSpan = imageList.length + 2; providerRow.append(providerCell); tbody.append(providerRow);
+      lastVendor = model.vendor;
     }
-    const entries = [...batches]; if (grouped.checked) entries.sort(([a], [b]) => compare(a, b));
-    for (const [provider, batch] of entries) {
-      const body = el('tbody');
-      if (provider) {
-        const providerRow = el('tr', undefined, 'provider'); const providerHead = el('th', provider);
-        providerHead.colSpan = images.length + 6; providerHead.scope = 'rowgroup'; providerRow.append(providerHead); body.append(providerRow);
-      }
-      for (const model of batch) {
-        const tr = el('tr'); const name = el('th', model.name, 'model'); name.scope = 'row';
-        name.append(el('small', `${model.provider} · Temperature ${model.temperature ?? '—'}`));
-        const modelIndex = models.indexOf(model);
-        name.append(directionButtons('row', modelIndex, `${model.name} (temperature ${model.temperature ?? 'unspecified'})`,
-          columns.value.startsWith('row') && Number(modelSelect.value) === modelIndex ? columns.value === 'row' ? 'asc' : 'desc' : null,
-          direction => { modelSelect.value = String(modelIndex); columns.value = direction === 'asc' ? 'row' : 'row-desc'; }));
-        tr.append(name);
-        for (const item of orderedImages) {
-          const row = model.predictions.get(item.image); const td = el('td'); const error = deviation(model, item);
-          if (!row || !validCount(row.model_count) || !validConfidence(row.confidence)) {
-            td.textContent = '—'; td.title = 'No valid count and confidence prediction';
-          } else {
-            const predicted = row.model_count; const actual = item['actual-count']; const diff = actual - predicted;
-            const correct = predicted === actual; const probability = row.confidence / 100;
-            const calibrationError = Math.abs(probability - Number(correct)); const uncertainty = 1 - probability;
-            const uncertaintyRatio = error === null ? null : uncertainty === 0 ? error === 0 ? 0 : Infinity : error / uncertainty;
-            shade(td, error);
-            td.title = `${correct ? 'Exact count' : 'Incorrect count'}; deviation ${error === null ? 'undefined' : `${(100 * error).toFixed(2)}%`}; confidence ${row.confidence.toFixed(1)}%; individual calibration error ${(100 * calibrationError).toFixed(1)} percentage points`;
-            if (modes.get('deviation').checked) td.append(el('span', error === null ? 'N/A' : `${(100 * error).toFixed(1)}%`, 'metric'));
-            if (modes.get('ratio').checked) td.append(el('span', `${predicted} / ${actual}`, 'metric'));
-            if (modes.get('percentage').checked) td.append(el('span', actual > 0 ? `${(100 * predicted / actual).toFixed(1)}% of actual` : 'N/A (actual = 0)', 'metric'));
-            if (modes.get('predicted').checked) td.append(el('span', `Pred: ${predicted}`, 'metric'));
-            if (modes.get('difference').checked) td.append(el('span', `Δ ${diff > 0 ? '+' : ''}${diff}`, 'metric'));
-            if (modes.get('confidence').checked) td.append(el('span', `${row.confidence.toFixed(1)}% confident`, 'metric'));
-            if (modes.get('calibration').checked) td.append(el('span', `Cal error: ${(100 * calibrationError).toFixed(1)} pp`, 'metric'));
-            if (modes.get('uncertainty-ratio').checked) td.append(el('span', uncertaintyRatio === null ? 'Dev ÷ uncert: N/A' : `Dev ÷ uncert: ${Number.isFinite(uncertaintyRatio) ? uncertaintyRatio.toFixed(2) : '∞'}×`, 'metric'));
-            if (!td.childNodes.length) { td.textContent = '·'; td.setAttribute('aria-label', td.title); }
-          }
-          tr.append(td);
+    const tr = node('tr'), title = node('th', undefined, 'model-cell'); title.scope = 'row';
+    tr.dataset.config = model.key;
+    title.append(arrows(`Sort images for ${model.name}: ${state.metric}`, sorts.columns?.model === model.key ? sorts.columns.direction : null, direction => sortColumns(model.key, direction)));
+    title.append(node('div', model.vendor, 'model-vendor'), node('div', configurationName(model, true), 'model-name'));
+    const spec = node('div', undefined, 'model-spec');
+    spec.append(node('div', `T ${model.temp === null ? 'omitted' : model.temp} · reasoning ${model.effort}`), node('div', `${model.provider}${model.maxTokens !== null ? ` · ${fmt(model.maxTokens, 0)} tokens` : ''}`));
+    spec.title = model.prompt ? `Prompt: ${model.prompt}` : 'Prompt not recorded'; title.append(spec); tr.append(title);
+    for (const image of imageList) {
+      const td = node('td', undefined, 'result-cell'), p = prediction(model, image);
+      td.dataset.image = image.key;
+      shade(td, value('percent', model, image));
+      td.title = p ? `Source: ${p.source}\n${p.error?.reason ?? ''}` : 'No prediction for this image';
+      if (!p) td.append(node('div', 'No result', 'missing'));
+      else {
+        if (p.status !== 'success') td.append(node('div', p.status, 'status-note'));
+        for (const metric of metrics.filter(m => m.show && m.key !== 'actual')) {
+          const v = value(metric.key, model, image);
+          const text = metric.key === 'ratio' && p.status !== 'success' ? '—' : metric.format(v, p);
+          const line = metricLine(metric.short, text, metric.key === 'percent'); line.dataset.metric = metric.key; td.append(line);
         }
-        const normalizedScore = scores.get(model); const normalizedCount = images.filter(item => deviation(model, item) !== null).length;
-        const normalized = el('td', normalizedScore === null ? '—' : `${(100 * normalizedScore).toFixed(1)}%`, 'normalized'); shade(normalized, normalizedScore);
-        normalized.append(el('small', 'mean deviation'), el('small', `${normalizedCount}/${images.length} evaluated`)); tr.append(normalized);
-        const score = metrics.get(model);
-        const values = score ? [
-          [score.confidence, 'stated probability'], [score.gap, '|confidence − accuracy|'],
-          [score.brier, 'mean squared error'], [score.ece, '10-bin expected error'],
-        ] : Array.from({ length: 4 }, () => [null, 'no valid samples']);
-        values.forEach(([value, label], index) => {
-          const td = el('td', value === null ? '—' : index === 2 ? value.toFixed(3) : `${(100 * value).toFixed(1)}%`, 'summary-metric');
-          if (value !== null) shade(td, index === 0 ? Math.abs(value - score.accuracy) : value);
-          td.append(el('small', label), el('small', score ? `${score.count}/${images.length} evaluated` : '0 evaluated')); tr.append(td);
-        });
-        body.append(tr);
+        if (!metrics.some(m => m.show && m.key !== 'actual')) td.append(node('div', '—', 'missing'));
       }
-      table.append(body);
+      tr.append(td);
     }
-    wrap.replaceChildren(table);
+    const overall = node('td', undefined, 'overall'), score = stats.get(model.key);
+    shade(overall, score.deviation);
+    overall.append(metricLine('Mean dev.', score.deviation === null ? '—' : `${fmt(score.deviation)}%`, true), metricLine('Total cost', `${money(score.knownCost)}${score.unknown ? '*' : ''}`));
+    overall.append(node('div', `${score.count}/${group.images.length} scored${score.failed ? ` · ${score.failed} failed/skipped` : ''}${score.unknown ? ` · ${score.unknown} cost unknown` : ''}`, 'coverage'));
+    tr.append(overall); tbody.append(tr);
   }
-  controls.addEventListener('change', draw); sorting.addEventListener('change', draw);
-  section.append(heading, explanation, controls, sorting, wrap); draw(); return section;
+  table.append(tbody); wrap.append(table); section.append(heading, wrap); return section;
+}
+
+function visibleRows() {
+  const configurations = new Map();
+  for (const group of state.groups.filter(group => !state.group || group.id === state.group)) {
+    for (const model of group.models.filter(model => `${model.name} ${model.provider}`.toLowerCase().includes(state.query))) {
+      if (!configurations.has(model.key)) configurations.set(model.key, { model, images: [] });
+      configurations.get(model.key).images.push(...group.images);
+    }
+  }
+  return [...configurations.values()].map(({ model, images }) => ({ model, ...totals(model, images), images: images.length, imageRecords: images }));
+}
+function renderSummary() {
+  const rows = visibleRows();
+  $('#model-summary').replaceChildren();
+  if (!rows.length) return;
+  const section = node('section', undefined, 'summary-section'); section.dataset.sortScope = 'summary';
+  const heading = node('div', undefined, 'group-heading');
+  heading.append(node('h2', 'Model summary'), node('p', 'By provider'));
+  const wrap = node('div', undefined, 'table-wrap summary-wrap'); wrap.tabIndex = 0;
+  wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', 'Model summary; scroll horizontally on small screens');
+  const table = node('table', undefined, 'summary-table'); table.setAttribute('aria-label', 'Model summary grouped by provider');
+  const columns = [
+    ['name', 'Model', v => v], ['deviation', 'Mean deviation', v => v === null ? '—' : `${fmt(v)}%`],
+    ['meanCost', 'Mean cost', money], ['meanTime', 'Mean time', v => v === null ? '—' : `${fmt(v)}s`],
+    ['knownCost', 'Total cost', money], ['totalTime', 'Total time', v => v === null ? '—' : `${fmt(v)}s`],
+  ];
+  const thead = node('thead'), header = node('tr');
+  for (const [key, label] of columns) {
+    const th = node('th'); th.scope = 'col';
+    if (state.summarySort.key === key) th.setAttribute('aria-sort', state.summarySort.direction === 'asc' ? 'ascending' : 'descending');
+    th.append(node('span', label), arrows(`Sort summary models by ${label.toLowerCase()}`, state.summarySort.key === key ? state.summarySort.direction : null, direction => { state.summarySort = { key, direction }; renderSummary(); }));
+    header.append(th);
+  }
+  thead.append(header); table.append(thead);
+  rows.sort((a, b) => order(a.model.vendor, b.model.vendor, state.providerGrouping || 'asc') || order(state.summarySort.key === 'name' ? a.model.name : a[state.summarySort.key], state.summarySort.key === 'name' ? b.model.name : b[state.summarySort.key], state.summarySort.direction) || compare(a.model.name, b.model.name));
+  let lastVendor = null, tbody;
+  for (const row of rows) {
+    if (row.model.vendor !== lastVendor) {
+      tbody = node('tbody'); table.append(tbody);
+      const groupRow = node('tr', undefined, 'provider-heading'); groupRow.dataset.provider = row.model.vendor;
+      const groupCell = node('th', row.model.vendor); groupCell.colSpan = columns.length; groupCell.scope = 'rowgroup';
+      groupRow.append(groupCell); tbody.append(groupRow); lastVendor = row.model.vendor;
+    }
+    const tr = node('tr'); tr.dataset.config = row.model.key;
+    for (const [key, , format] of columns) {
+      const cell = node(key === 'name' ? 'th' : 'td');
+      if (key === 'name') {
+        cell.scope = 'row'; cell.className = 'summary-model';
+        cell.append(node('span', configurationName(row.model, true)), node('small', `T ${row.model.temp ?? 'omitted'} · ${row.model.effort} · ${row.model.provider} · ${row.model.maxTokens ?? 'unknown'} tokens`));
+        cell.title = row.model.prompt ? `Prompt: ${row.model.prompt}` : 'Prompt not recorded';
+      } else {
+        cell.textContent = format(row[key]);
+        if (key === 'deviation') { shade(cell, row.deviation); cell.title = `${row.count}/${row.images} images scored`; }
+        if ((key === 'knownCost' && row.unknown) || (key === 'totalTime' && row.unknownTime)) {
+          cell.append(document.createTextNode('*'));
+          cell.title = `${key === 'knownCost' ? row.unknown : row.unknownTime} values unknown; total is partial`;
+        }
+      }
+      tr.append(cell);
+    }
+    tbody.append(tr);
+  }
+  wrap.append(table); section.append(heading, wrap);
+  if (rows.some(row => row.unknown || row.unknownTime)) section.append(node('p', '* Partial total: some values are unknown.', 'summary-note'));
+  $('#model-summary').append(section);
+}
+function render() {
+  const rows = visibleRows();
+  renderOverview(rows);
+  renderCharts(rows);
+  renderSummary();
+  $('#results').replaceChildren();
+  for (const group of state.groups.filter(group => !state.group || group.id === state.group)) {
+    const section = renderGroup(group); if (section) $('#results').append(section);
+  }
+  if (!$('#results').children.length) $('#results').append(node('p', 'No matching results.', 'empty'));
+}
+function renderWarnings() {
+  const warnings = [...new Set(state.warnings)]; $('#warnings').hidden = !warnings.length;
+  $('#warnings summary').textContent = `${warnings.length} data ${warnings.length === 1 ? 'notice' : 'notices'}`;
+  $('#warnings ul').replaceChildren(...warnings.map(warning => node('li', warning)));
 }
 async function load() {
-  const warnings = [];
-  const results = document.querySelector('#results');
-  const summary = document.querySelector('#summary');
+  $('#reload').disabled = true; state.warnings = []; $('#summary').textContent = 'Loading results…';
   try {
-    const manifestURL = new URL('eval/include.txt', document.baseURI);
-    const response = await fetch(manifestURL, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Cannot load eval/include.txt (HTTP ${response.status}).`);
-    const files = [...new Set((await response.text()).split(/\r?\n/).map(s => s.trim()).filter(s => s && !s.startsWith('#')))];
-    const sources = await Promise.all(files.map(async name => {
-      try {
-        const url = new URL(name, manifestURL);
-        if (!url.href.startsWith(new URL('.', manifestURL).href) || !url.pathname.endsWith('.json') || url.search || url.hash) throw new Error('use a JSON path within eval/');
-        const response = await fetch(url, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const rows = await response.json();
-        if (!Array.isArray(rows)) throw new Error('expected a JSON array');
-        return { name, rows };
-      } catch (error) { warnings.push(`${name}: ${error.message}`); return null; }
-    }));
-    const loaded = sources.filter(Boolean);
-    const regularSources = loaded.map(source => ({ ...source, rows: source.rows.filter(row => !Object.prototype.hasOwnProperty.call(row, 'confidence')) }));
-    const confidenceSources = loaded.map(source => ({ ...source, rows: source.rows.filter(row => Object.prototype.hasOwnProperty.call(row, 'confidence')) }));
-    const groups = organize(regularSources, warnings);
-    const confidenceGroups = organize(confidenceSources, warnings, true);
-    const modelNames = new Set(); let imageCount = 0;
-    for (const [id, group] of [...groups].sort(([a], [b]) => compare(a, b))) {
-      results.append(renderGroup(id, group)); imageCount += group.images.size;
-      for (const model of group.models.values()) modelNames.add(model.name);
-    }
-    const confidenceResults = document.querySelector('#confidence-results');
-    for (const [id, group] of [...confidenceGroups].sort(([a], [b]) => compare(a, b))) {
-      confidenceResults.append(renderConfidenceGroup(id, group));
-      for (const model of group.models.values()) modelNames.add(model.name);
-    }
-    summary.replaceChildren(...[`${modelNames.size} models`, `${imageCount} images`, `${groups.size} groups`, `${loaded.length}/${files.length} result files loaded`].map(text => el('span', text)));
-    if (!groups.size) results.append(el('p', 'No results to display. Add result JSON filenames to eval/include.txt.', 'empty'));
+    const paths = await discover();
+    const responses = await Promise.allSettled(paths.map(async path => ({ path, data: await fetchJSON(path) })));
+    const sources = [];
+    responses.forEach((result, i) => {
+      if (result.status === 'fulfilled') sources.push(result.value);
+      else state.warnings.push(`${paths[i]}: ${result.reason.message}`);
+    });
+    state.groups = organize(sources); state.files = sources.length;
+    const images = state.groups.reduce((sum, group) => sum + group.images.length, 0);
+    const configurations = new Set(state.groups.flatMap(group => group.models.map(model => model.key))).size;
+    $('#summary').textContent = `${configurations} configurations · ${images} images · ${sources.length} files`;
+    $('#group-filter').replaceChildren(node('option', 'All groups'));
+    $('#group-filter').firstChild.value = '';
+    for (const group of state.groups) { const option = node('option', `Group ${group.id}`); option.value = group.id; $('#group-filter').append(option); }
+    if (!state.groups.some(group => group.id === state.group)) state.group = '';
+    $('#group-filter').value = state.group;
+    $('#loaded-at').textContent = `refreshed ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    if (!paths.length) state.warnings.push('No JSON files discovered in eval2/.');
+    if (state.groups.some(group => group.images.some(image => image.actual === null))) state.warnings.push('Some images have no ground truth. Add their group/image/actual-count records to an eval2 metadata JSON file.');
+    render();
   } catch (error) {
-    summary.textContent = 'Results unavailable';
-    warnings.push(`${error.message} Serve this folder over HTTP or open its GitHub Pages URL.`);
-  }
-  if (warnings.length) {
-    const errors = document.querySelector('#errors'); errors.hidden = false;
-    errors.textContent = `Some results could not be loaded:\n${warnings.join('\n')}`;
-  }
+    $('#summary').textContent = 'Could not load results';
+    $('#model-summary').replaceChildren();
+    $('#confidence-charts').replaceChildren();
+    $('#setup-notes').replaceChildren(node('li', 'Benchmark configuration unavailable until results load.'));
+    $('#model-observations').replaceChildren(node('li', 'No observations available.'));
+    $('#results').replaceChildren(node('p', 'Run python3 build_manifest.py, then serve this folder with python3 -m http.server 8765. On static hosting, publish eval2/manifest.json with the result files.', 'empty load-error'));
+    state.warnings.push(error.message);
+  } finally { renderWarnings(); $('#reload').disabled = false; }
 }
-const ramp = document.querySelector('.color-ramp');
-ramp.style.background = `linear-gradient(to right, ${Array.from({ length: 101 }, (_, i) => `${errorColor(i / 100)} ${i}%`).join(', ')})`;
+for (const metric of metrics) {
+  const label = node('label'), checkbox = node('input'); checkbox.type = 'checkbox'; checkbox.checked = metric.show;
+  checkbox.addEventListener('change', () => { metric.show = checkbox.checked; render(); });
+  label.append(checkbox, document.createTextNode(metric.label)); $('#metrics').append(label);
+  const option = node('option', metric.label); option.value = metric.key; $('#sort-metric').append(option);
+}
+$('#sort-metric').value = state.metric;
+$('#sort-metric').addEventListener('change', event => { state.metric = event.target.value; render(); });
+$('#group-filter').addEventListener('change', event => { state.group = event.target.value; render(); });
+$('#provider-grouping').addEventListener('change', event => { state.providerGrouping = event.target.value; render(); });
+$('#search').addEventListener('input', event => { state.query = event.target.value.trim().toLowerCase(); render(); });
+$('#reload').addEventListener('click', load);
 load();

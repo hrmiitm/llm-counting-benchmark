@@ -91,32 +91,86 @@ The API can charge for every image request. `.env` is ignored by Git. Results in
 
 ## Benchmark website
 
-The root `index.html` is a static GitHub Pages site with no build step. It fetches `eval/include.txt`, then fetches and parses only the JSON files listed there. Results are never embedded in the HTML or JavaScript.
+The root `index.html`, `app.js`, `charts.js`, and `styles.css` form a static, compact results
+viewer. There are no embedded models, predictions, image lists, or ground truths.
+It reads every JSON file discovered under `eval2/`, including subfolders. Files
+may contain a result envelope with `results`, a prediction array, or a metadata
+array. Ground truth comes from `actual-count` metadata joined by group and image;
+image thumbnails link to `data/group{group}/{image}`. No metadata is sent to an API.
 
-Preview locally (opening `index.html` as a file will not allow JSON fetching):
+Preview locally:
 
 ```bash
 python3 -m http.server 8765
 ```
 
-Open <http://localhost:8765>. For GitHub Pages, push the website, `eval/include.txt`, the listed JSON files, and the image folders. In **Settings → Pages**, choose **Deploy from a branch**, your publishing branch, and **/ (root)**. The page works under a repository subpath.
+Open <http://localhost:8765>. Refresh discovers new JSON files automatically when
+the server exposes directory listings. For GitHub Pages or another static host
+without folder listings, generate the file index before publishing:
 
-### Add results
+```bash
+python3 build_manifest.py
+```
 
-1. Save an evaluation JSON array in `eval/`.
-2. Add its filename to `eval/include.txt`, one path per line, relative to `eval/`. Blank lines and lines beginning with `#` are ignored. Only listed files are loaded.
-3. Commit and push the JSON and manifest. Reload the page after Pages deploys.
+Publish the four website files, `eval2/manifest.json`, all its listed JSON files,
+and the corresponding `data/` images. Rebuild the manifest after adding or removing
+JSON files. The generator scans the folder; no filenames need to be maintained
+by hand. Relative URLs work under a repository subpath. Never publish `.env`.
 
-Each record uses the existing benchmark fields: `group`, `id`, `image`, `label`, `actual-count`, `model`, `model_temp`, and `model_count`. The group comes from the record, not its filename. Image links point to `data/group{group}/{image}`. Models, providers, columns, and groups are discovered automatically. Provider headings use the prefix before `/` in the model name; names without a prefix appear under Other.
+Checkboxes control actual counts, absolute percentage deviation, predicted/actual,
+cost, time, signed deviation (predicted minus actual), and confidence. Confidence
+uses a 0–1 probability; files explicitly declaring a 0–100 scale are converted.
+Colors continuously interpolate green (0%), yellow (50%), and red (100%+); only
+color is clamped, not the displayed percentage. Overall mean deviation weights
+images equally and excludes missing predictions and zero actual counts. Coverage
+is shown; unknown costs are flagged and excluded from the known-cost total.
 
-Rows represent model/temperature combinations so runs at different temperatures remain distinguishable. If a model/temperature/image appears more than once, the last record in manifest order wins. Conflicting actual counts are reported and skipped. Missing or malformed files produce a visible warning while valid files still render.
+Use image-header Asc/Desc arrows to sort model rows, and a model-row's arrows to
+sort image columns, according to the chosen sort metric. Overall arrows sort by
+mean deviation or total known cost. Missing values stay last. Filter models by
+name/provider or choose an image group. The Group models dropdown groups by the
+model provider (the name prefix), in either A–Z or Z–A order; other sorts then
+apply within each provider. Tables grow to show every row without internal
+vertical scrolling. Horizontal scrolling remains available on smaller screens.
 
-Each table defaults to percentage deviation and predicted/actual counts. Optional displays include predicted/actual as a percentage (100% means exact, above 100% means overcount), raw predicted count, and actual minus predicted. Exact-match accuracy has been removed.
+The top bullets derive the task size and recorded temperature, reasoning, token,
+tool, and provider settings from JSON. Observations identify the lowest mean
+counting deviation, cheapest mean call, and largest observed confidence/accuracy
+gap among filtered configurations. Deviation and cost rankings require coverage
+of the same visible images; missing values are not treated as zero.
+Main copy uses 15 px type, table values 14–16 px, and model settings 12 px.
+Detailed formulas and missing-value rules are under the collapsed “How to read”
+section. Small USD amounts retain six decimal places. Skipped calls do not create
+unknown charges, and absent temperature metadata is shown as unspecified.
 
-**Normalized error** is `100 × mean(abs(predicted − actual) / actual)`. Each image contributes equally. Lower is better; 0% means perfect counts. Missing predictions and zero actual counts are excluded, with coverage shown. Values can exceed 100%.
+Two interactive plots adapt the [Confidence Calibration reference](https://sanand0.github.io/llmevals/confidence-calibration/):
+the calibration plot compares mean stated confidence with exact-match accuracy
+in five equal-width probability bands; dot size shows sample count and the dashed
+diagonal represents perfect calibration. The risk–coverage plot shows wrong-count
+rate versus the share of ground-truth images accepted at each observed confidence
+cutoff. Tied confidences stay together; failed or missing predictions cannot be
+accepted. Exact matching includes zero ground truth, unlike percentage deviation.
+Both plots exclude missing/invalid confidence or ambiguous ground truth. Empty
+bins are omitted. Hover, tap, or focus dots for values; choose a single model to
+inspect overlapping points. Plots and bullets follow the search/group filters.
+Click a legend model to isolate it, and click again to show all. Model colors
+stay consistent across filters; numbered labels distinguish multiple configurations
+of the same model. Configuration selectors and summary rows include token caps.
+With only six images per model, these describe the pilot and do not validate
+confidence thresholds for future images. Ground truth stays in the website's
+analysis; the benchmark request/results scripts are unchanged.
 
-Models default to ascending normalized error across providers. Use the explicit Asc/Desc buttons in each column header to sort models; use each model row’s Asc/Desc buttons to reorder images by that model’s deviation; image headings sort by absolute percentage deviation. Missing values stay last. Optional provider grouping applies the chosen sort within each provider. Image-order controls reorder columns by original ID, mean error, or a selected model's error.
+The compact Model summary always groups configurations by model provider and
+follows the same search and image-group filters. Its columns show mean absolute
+percentage deviation, mean cost, mean time, total known cost, and total known
+time. Summary header arrows sort models within each provider. Cost/time means
+exclude skipped calls and missing values; recorded failed calls contribute
+available cost/time. Unknown values mark totals as partial. Times measure
+request latency, not the benchmark's deliberate delays or overall wall time.
 
-Cells and overall error use D3's continuous `interpolateRdYlGn`, reversed: 0% green, 50% yellow, 100%+ red. Both tables share this fixed domain; only color is clamped, not the numeric values. Foreground color adjusts for contrast. Zero-denominator and missing cells are neutral. D3 7.9.0 is served locally from `vendor/` with its license; no runtime CDN is required.
-
-The loader does not scan `eval/` or fetch metadata JSON. All model names, image columns, ground truths, predictions, and scores originate exclusively from the result files listed in `eval/include.txt`. Image files are fetched only for the thumbnails.
+Model configurations separate temperature, reasoning effort, endpoint, token cap,
+recorded prompt, and recorded tool/fallback settings. Duplicate records for the same image/configuration use the
+latest recorded timestamp, with sorted file paths breaking ties. Smoke-test files,
+if present, are also discovered; newer matching records can replace older ones.
+Conflicting ground truths disable that image's deviation and produce a notice.
+Malformed files and missing ground truths produce notices while valid data loads.

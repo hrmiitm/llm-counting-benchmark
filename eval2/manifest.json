@@ -1,0 +1,14 @@
+{
+  "files": [
+    "eval2/anthropic_claude-haiku-4.5_temp0_reasoning-low_group1.json",
+    "eval2/anthropic_claude-sonnet-5.5_temp0_reasoning-low_group1.json",
+    "eval2/deepseek_deepseek-v4-flash-vision-exp_temp0_reasoning-low_group1.json",
+    "eval2/deepseek_deepseek-v4.1-flash_temp0_reasoning-low_group1.json",
+    "eval2/google_gemini-3.1-flash-lite_temp0_reasoning-low_group1.json",
+    "eval2/google_gemini-3.8-flash_temp0_reasoning-low_group1.json",
+    "eval2/metadata.json",
+    "eval2/openai_gpt-5.6-luna_tempdefault_reasoning-low_group1.json",
+    "eval2/openai_gpt-5.6-sol_tempdefault_reasoning-low_group1.json",
+    "eval2/openai_gpt-5.6-terra_tempdefault_reasoning-low_group1.json"
+  ]
+}

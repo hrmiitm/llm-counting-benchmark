@@ -3,27 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Compare vision models on object counting, image by image.">
-  <title>LLM Counting Benchmark</title>
+  <meta name="description" content="A compact comparison of image-counting predictions, confidence, cost and latency.">
+  <title>Count / Compare</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="vendor/d3.min.js" defer></script>
+  <script src="charts.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
   <main>
-    <header class="intro">
-      <p class="eyebrow">VISION MODEL BENCHMARK</p>
-      <h1>Can LLMs count?</h1>
-      <p class="subtitle">Same images. Different models. Explore how closely vision models count the objects they see.</p>
-      <div class="summary" id="summary" aria-live="polite">Loading results…</div>
+    <header class="masthead">
+      <div><p class="eyebrow">VISION BENCHMARK</p><h1>Count <span>/</span> Compare</h1></div>
+      <div class="header-right"><p id="summary" aria-live="polite">Loading results…</p><button id="reload" type="button">↻ Refresh</button></div>
     </header>
-    <div id="errors" role="alert" hidden></div>
-    <div class="guide"><strong>Absolute percentage deviation · lower is better</strong><div class="color-legend"><div class="color-ramp" aria-hidden="true"></div><div class="scale-labels"><span>0% · exact</span><span>50%</span><span>100%+</span></div></div><span>— Missing · N/A when actual is zero</span></div>
-    <p class="method">Percentage deviation = |predicted − actual| ÷ actual × 100. Normalized error is the mean deviation across images, with each image weighted equally. Missing predictions and zero actual counts are excluded; coverage appears beneath the score. Colors use the same continuous scale in both tables, capped at 100%; displayed values are not capped. “Predicted / actual (%)” shows the predicted fraction of the true count: 100% is exact, above 100% is an overcount.</p>
+    <section class="overview" aria-label="Benchmark setup and observations">
+      <div><h2>Setup</h2><ul id="setup-notes"><li>Loading configuration…</li></ul></div>
+      <div><h2>Highlights</h2><ul id="model-observations"><li>Loading observations…</li></ul></div>
+    </section>
+    <section class="controls" aria-label="Table settings">
+      <fieldset id="metrics"><legend>Show</legend></fieldset>
+      <div class="control-row">
+        <label>Sort metric <select id="sort-metric" aria-label="Metric for row and column sorting"></select></label>
+        <label>Group <select id="group-filter" aria-label="Filter image group"><option value="">All groups</option></select></label>
+        <label>Group models <select id="provider-grouping" aria-label="Group models by provider"><option value="">Off</option><option value="asc">Provider A → Z</option><option value="desc">Provider Z → A</option></select></label>
+        <label class="search-label">Find model <input id="search" type="search" placeholder="Name or provider…"></label>
+        <div class="legend"><span class="ramp" aria-hidden="true"></span><span>0% → 50% → 100%+ deviation</span></div>
+      </div>
+    </section>
+    <details id="warnings" hidden><summary></summary><ul></ul></details>
+    <div id="confidence-charts"></div>
+    <div id="model-summary"></div>
     <div id="results" aria-live="polite"></div>
-    <div id="confidence-results" aria-live="polite"></div>
-    <noscript><p>Enable JavaScript to load the benchmark results.</p></noscript>
-    <footer>Results loaded from <a href="eval/include.txt">eval/include.txt</a> and its listed JSON files. Inspired by <a href="https://sanand0.github.io/llmmath/">LLM Mental Math</a>.</footer>
+    <footer>
+      <details class="method-notes"><summary>How to read</summary>
+        <p>% deviation = |predicted − actual| / actual × 100; Δ count = predicted − actual. Mean deviation weights images equally, excluding missing predictions and zero actual counts. Confidence is P(exact count); chart accuracy requires an exact match.</p>
+        <p>Header arrows sort models; model-row arrows sort images. Provider grouping keeps sorts within providers. Missing values stay last. Cost/time means exclude missing values and skipped calls; totals include known failed-call charges. * marks a partial total. Times are summed request latencies, not wall time.</p>
+        <p>Latest record wins per image/configuration. Totals cover displayed records. Charts omit invalid confidence and ambiguous ground truth; coverage includes all images with known ground truth. Equal-confidence answers share one cutoff.</p>
+      </details>
+      <p>JSON: <code>eval2/</code> · images: <code>data/</code> · <span id="loaded-at"></span> · <a href="https://sanand0.github.io/llmevals/confidence-calibration/" target="_blank" rel="noopener">Chart reference</a></p>
+    </footer>
+    <noscript>Enable JavaScript to load the result files.</noscript>
   </main>
 </body>
 </html>
