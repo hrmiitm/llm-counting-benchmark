@@ -91,9 +91,26 @@ The API can charge for every image request. `.env` is ignored by Git. Results in
 
 ## Benchmark website
 
-The root `index.html`, `app.js`, `charts.js`, and `styles.css` form a static, compact results
-viewer. There are no embedded models, predictions, image lists, or ground truths.
-It reads every JSON file discovered under `eval2/`, including subfolders. Files
+The website has two pages with shared navigation:
+
+Both pages offer light and dark modes. The initial appearance follows the system
+preference; the navigation's theme button saves an explicit choice locally and
+keeps it consistent across pages and tabs. The shared `theme.js` initializes before
+styles load to prevent a flash of the wrong theme. `theme.css` defines the palettes,
+including readable chart labels and distinct heatmap colors for each appearance.
+
+- Page 1 (`index.html`, `story.js`, `story.css`) tells the story of the saved
+  3 October 2026 pilot: approximate versus exact counts, confidence, and cost.
+  It calculates findings from the nine original `main3.py` result envelopes and
+  `eval2/metadata.json`, using `eval2/manifest.json` for file discovery. It excludes
+  subfolder smoke tests and other runs. Missing original files, incomplete results,
+  or changed settings produce an explicit notice instead of partial findings.
+  Interactive charts switch counting measures, test confidence cutoffs, and show
+  cost versus count deviation. The source files and limitations are linked in the story.
+- Page 2 (`compare.html`, `app.js`, `charts.js`, `styles.css`) preserves the original
+  compact results viewer, with its filters, sorting, summaries, and calibration charts.
+
+The page 2 viewer reads every JSON file discovered under `eval2/`, including subfolders. Files
 may contain a result envelope with `results`, a prediction array, or a metadata
 array. Ground truth comes from `actual-count` metadata joined by group and image;
 image thumbnails link to `data/group{group}/{image}`. No metadata is sent to an API.
@@ -112,8 +129,10 @@ without folder listings, generate the file index before publishing:
 python3 build_manifest.py
 ```
 
-Publish the four website files, `eval2/manifest.json`, all its listed JSON files,
-and the corresponding `data/` images. Rebuild the manifest after adding or removing
+Publish both HTML pages, `app.js`, `charts.js`, `styles.css`, `story.js`, `story.css`,
+`navigation.css`, `theme.js`, `theme.css`, `vendor/d3.min.js`, `vendor/D3-LICENSE`,
+`eval2/manifest.json`,
+all its listed JSON files, and the corresponding `data/` images. Rebuild the manifest after adding or removing
 JSON files. The generator scans the folder; no filenames need to be maintained
 by hand. Relative URLs work under a repository subpath. Never publish `.env`.
 
@@ -174,3 +193,32 @@ latest recorded timestamp, with sorted file paths breaking ties. Smoke-test file
 if present, are also discovered; newer matching records can replace older ones.
 Conflicting ground truths disable that image's deviation and produce a notice.
 Malformed files and missing ground truths produce notices while valid data loads.
+
+Browser verification (no model API calls), with the local server above and Chrome
+running with `--headless --no-sandbox --remote-debugging-port=9222`:
+
+```bash
+node scripts/story-browser-test.mjs
+node scripts/browser-test.mjs
+```
+
+The story test independently checks displayed figures against raw JSON, both
+counting measures, confidence cutoffs, point details, mobile layout, relative
+links, and an unavailable-data state. It also checks both themes' text contrast,
+cross-page preference persistence, system preference changes, keyboard interaction,
+44-pixel story answer targets, and shared URLs. The explorer test audits every result cell
+and its existing filters, sorting, and charts. Screenshots are saved under `/tmp`.
+
+Story controls are bookmarkable as `#confidence?measure=exact&cutoff=95` (the
+section name follows the current anchor). Page 2 captures its search, image group,
+metrics, provider grouping, chart model, and sorts in `#explore?...`. Reloading or
+sharing the URL restores the view. Themes remain a local reader preference.
+In the story, arrow keys move between answers in an image's grid; focusing or
+selecting an answer shows its full count and confidence. The cost chart's model
+picker provides the same details without requiring a precise tap on a small point.
+
+The refinements follow the repository's
+[design](https://github.com/sanand0/scripts/blob/main/agents/design/SKILL.md),
+[data-viz](https://github.com/sanand0/scripts/blob/main/agents/data-viz/SKILL.md), and
+[interactive-storytelling](https://github.com/sanand0/scripts/blob/main/agents/interactive-storytelling/SKILL.md)
+skills, alongside the original data-story skill.

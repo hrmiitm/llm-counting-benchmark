@@ -2,46 +2,69 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A compact comparison of image-counting predictions, confidence, cost and latency.">
-  <title>Count / Compare</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="charts.js" defer></script>
-  <script src="app.js" defer></script>
+  <meta name="description" content="Nine vision models, six crowded images, and the gap between a plausible count and an exact one. A data story from the LLM Count Benchmark.">
+  <script src="theme.js?v=2"></script>
+  <link rel="stylesheet" href="theme.css?v=2">
+  <title>Can it count? / Count Compare</title>
+  <link rel="stylesheet" href="navigation.css?v=2">
+  <link rel="stylesheet" href="story.css?v=2">
+  <script src="vendor/d3.min.js" defer></script>
+  <script src="story.js?v=2" defer></script>
 </head>
 <body>
-  <main>
-    <header class="masthead">
-      <div><p class="eyebrow">VISION BENCHMARK</p><h1>Count <span>/</span> Compare</h1></div>
-      <div class="header-right"><p id="summary" aria-live="polite">Loading results…</p><button id="reload" type="button">↻ Refresh</button></div>
-    </header>
-    <section class="overview" aria-label="Benchmark setup and observations">
-      <div><h2>Setup</h2><ul id="setup-notes"><li>Loading configuration…</li></ul></div>
-      <div><h2>Highlights</h2><ul id="model-observations"><li>Loading observations…</li></ul></div>
-    </section>
-    <section class="controls" aria-label="Table settings">
-      <fieldset id="metrics"><legend>Show</legend></fieldset>
-      <div class="control-row">
-        <label>Sort metric <select id="sort-metric" aria-label="Metric for row and column sorting"></select></label>
-        <label>Group <select id="group-filter" aria-label="Filter image group"><option value="">All groups</option></select></label>
-        <label>Group models <select id="provider-grouping" aria-label="Group models by provider"><option value="">Off</option><option value="asc">Provider A → Z</option><option value="desc">Provider Z → A</option></select></label>
-        <label class="search-label">Find model <input id="search" type="search" placeholder="Name or provider…"></label>
-        <div class="legend"><span class="ramp" aria-hidden="true"></span><span>0% → 50% → 100%+ deviation</span></div>
+  <a class="skip-link" href="#story">Skip to story</a>
+  <nav class="page-nav" aria-label="Benchmark pages"><a class="page-brand" href="index.html">COUNT / COMPARE</a><div><a href="index.html" aria-current="page">01 <span>The story</span></a><a href="compare.html">02 <span>Explore the data</span></a></div><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">Dark mode</button></nav>
+  <main id="story">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">A SMALL TEST OF A BIG PROMISE</p>
+        <h1>It can see<br>the picture.<br><em>Can it count?</em></h1>
+        <p class="dek">Ask a vision model to count a wall of bricks. It gives you a number. It even tells you how sure it is. The difficult part is knowing which to trust.</p>
+        <p class="byline">LLM Count Benchmark <span aria-hidden="true">/</span> <time datetime="2026-10-03">3 October 2026 pilot</time></p>
+        <a class="read-link" href="#first-look">Follow the evidence <span aria-hidden="true">↓</span></a>
       </div>
-    </section>
-    <details id="warnings" hidden><summary></summary><ul></ul></details>
-    <div id="confidence-charts"></div>
-    <div id="model-summary"></div>
-    <div id="results" aria-live="polite"></div>
-    <footer>
-      <details class="method-notes"><summary>How to read</summary>
-        <p>% deviation = |predicted − actual| / actual × 100; Δ count = predicted − actual. Mean deviation weights images equally, excluding missing predictions and zero actual counts. Confidence is P(exact count); chart accuracy requires an exact match.</p>
-        <p>Header arrows sort models; model-row arrows sort images. Provider grouping keeps sorts within providers. Missing values stay last. Cost/time means exclude missing values and skipped calls; totals include known failed-call charges. * marks a partial total. Times are summed request latencies, not wall time.</p>
-        <p>Latest record wins per image/configuration. Totals cover displayed records. Charts omit invalid confidence and ambiguous ground truth; coverage includes all images with known ground truth. Equal-confidence answers share one cutoff.</p>
-      </details>
-      <p>JSON: <code>eval2/</code> · images: <code>data/</code> · <span id="loaded-at"></span> · <a href="https://sanand0.github.io/llmevals/confidence-calibration/" target="_blank" rel="noopener">Chart reference</a></p>
-    </footer>
-    <noscript>Enable JavaScript to load the result files.</noscript>
+      <figure class="hero-image">
+        <a href="data/group1/2373.jpg" target="_blank" rel="noopener" aria-label="Open the original brick image"><img src="data/group1/2373.jpg" alt="A wall of dark bricks with staggered rows and pale mortar." width="384" height="384"></a>
+        <figcaption><span>One wall. Two very different counts.</span><div class="hero-counts"><div><small>GROUND TRUTH</small><strong id="hero-actual">—</strong></div><div><small>MODEL ANSWER</small><strong id="hero-predicted">—</strong></div><div><small>STATED CONFIDENCE</small><strong id="hero-confidence">—</strong></div></div><p id="hero-source">Loading the recorded answer…</p></figcaption>
+      </figure>
+    </header>
+    <p id="story-status" class="load-status" role="status">Reading the saved pilot results…</p>
+    <div id="story-content" hidden>
+      <div class="story-intro"><p>Imagine you’re checking inventory. A rough estimate might be enough to plan a delivery. It is a different matter when the count has to be right.</p><p>In this pilot, nine vision models get the same six images: bottle caps, books, buffaloes, bricks, cement bags, and stamps. Each receives a simple request: count the objects, then report the probability that the answer is <em>exactly</em> correct.</p><p>The ground-truth counts stay out of the prompt. The models have to look.</p></div>
+      <section id="first-look" class="story-beat">
+        <div class="beat-heading"><span class="beat-number">01</span><p class="eyebrow">THE FIRST LOOK</p></div>
+        <h2>Neat rows make it look easy.</h2>
+        <div class="split"><div class="prose"><p>The stamp image offers an inviting place to start: objects arranged in separate rows, with clear edges. The rows have different lengths. Count each row, then add the row totals.</p><p id="stamp-finding"></p><p>Then move to the herd, the shelf, the wall. Objects touch. Boundaries compete for attention. The results change sharply.</p><p>That is a possible explanation, not a tested cause: these six images vary in object type and count as well as arrangement.</p></div><figure class="stamp-figure"><a href="data/group1/2933.jpg" target="_blank" rel="noopener"><img src="data/group1/2933.jpg" alt="Postage stamps arranged in seven rows of different lengths." width="384" height="384" loading="lazy"></a><figcaption id="stamp-caption"></figcaption></figure></div>
+        <figure class="story-figure"><h3 id="image-chart-title"></h3><p class="chart-subtitle">Exact answers for each image · one mark per model</p><div id="image-chart" class="image-chart"></div><figcaption>Filled marks match the metadata count exactly; open marks do not. Each row groups exact answers first. Click an image to inspect the original.</figcaption></figure>
+        <p class="revelation" id="exact-revelation"></p>
+      </section>
+      <section id="close" class="story-beat">
+        <div class="beat-heading"><span class="beat-number">02</span><p class="eyebrow">A DIFFERENT KIND OF RIGHT</p></div>
+        <h2>Close is useful.<br>Exact is a higher bar.</h2>
+        <div class="prose"><p id="winner-finding"></p><p>A count can be a good estimate and still fail the promise of exactness. The distinction changes how you read a leaderboard.</p></div>
+        <figure class="story-figure"><h3 id="ranking-title"></h3><div class="metric-switch" role="group" aria-label="Choose counting measure"><button type="button" data-measure="deviation" aria-pressed="true">Average count deviation</button><button type="button" data-measure="exact" aria-pressed="false">Exact answers</button></div><p class="chart-subtitle" id="ranking-subtitle"></p><div id="ranking-chart"></div><figcaption id="ranking-note"></figcaption></figure>
+      </section>
+      <section id="confidence" class="story-beat">
+        <div class="beat-heading"><span class="beat-number">03</span><p class="eyebrow">THE CONFIDENCE TRAP</p></div>
+        <h2>A sure answer can<br>still be a wrong answer.</h2>
+        <div class="prose"><p id="brick-finding"></p><p>Could you avoid mistakes by accepting only confident answers? Try moving the cutoff. The remaining answers show what that rule would have done in this pilot.</p></div>
+        <figure class="story-figure confidence-figure"><h3 id="confidence-title"></h3><div class="cutoff-control"><label for="confidence-cutoff">Accept stated confidence of at least <output id="cutoff-value" for="confidence-cutoff">90%</output></label><input id="confidence-cutoff" type="range" min="0" max="100" step="1" value="90"></div><p id="cutoff-summary" class="cutoff-summary" aria-live="polite"></p><div class="dot-legend"><span><i class="dot-key exact"></i> Exact</span><span><i class="dot-key wrong"></i> Wrong</span><span><i class="dot-key excluded"></i> Below cutoff</span></div><div id="confidence-chart" class="confidence-grid"></div><p id="answer-detail" class="answer-detail" aria-live="polite">Select an answer to inspect its count and confidence.</p><figcaption>Every circle is one answer, grouped by image. Below-cutoff answers fade. Confidence means probability of an <em>exact</em> match, not how close the count is. This is a retrospective check, not a validated cutoff for new images.</figcaption></figure>
+      </section>
+      <section id="cost" class="story-beat">
+        <div class="beat-heading"><span class="beat-number">04</span><p class="eyebrow">WHAT TO DO WITH THE ANSWER</p></div>
+        <h2>Pay for the task<br>you actually need.</h2>
+        <div class="prose"><p id="cost-finding"></p><p>If the job allows an estimate, compare count deviation and cost together. If the job demands an exact tally, build in a verification step; this pilot gives little support for relying on stated confidence alone.</p></div>
+        <figure class="story-figure"><h3>Higher spending does not give a clean accuracy ranking.</h3><p class="chart-subtitle">Cost of all six requests vs. average count deviation · lower and left is better</p><div id="cost-chart" class="cost-chart"></div><label class="cost-select" for="cost-model">Inspect a model <select id="cost-model"></select></label><p id="cost-detail" class="answer-detail" aria-live="polite"></p><figcaption>Recorded API charges in USD, including billed reasoning. Cost axis is logarithmic; equal spacing represents equal cost ratios. Select a point for the full model name and values.</figcaption></figure>
+        <div class="caveat"><h3>What we’d want to confirm</h3><p>This is one run on six selected images, with one answer per model and image. Image difficulty, sampling, and provider behavior may change the result. The story scores against the supplied metadata; the full set still needs an independent count audit. Repeat the test on a larger, independently checked set before choosing a production model or a confidence threshold.</p></div>
+        <p class="closing">The next question is practical: how much counting error can your task tolerate? Decide that first. Then test the model against it.</p>
+        <a class="explore-link" href="compare.html">Explore every prediction on page 2 <span aria-hidden="true">→</span></a>
+      </section>
+      <section class="methodology" aria-labelledby="methods-heading"><h2 id="methods-heading">The evidence behind the story</h2><p id="sample-summary"></p><p>The <a href="main3.py">benchmark script</a> requests JSON counts and confidence with low reasoning effort, a 4,096-token cap, no tools, no retries, and no provider fallbacks. Non-GPT models use temperature 0; GPT models use their default sampling. Each model is pinned to its configured provider endpoint.</p><p>Average count deviation is the mean of |prediction − ground truth| ÷ ground truth × 100, with each image weighted equally. Exact answers require equality. Costs are the saved API-reported charges, not current list prices.</p><p id="source-links"></p><p class="skill-credit">Story approach: <a href="https://raw.githubusercontent.com/sanand0/scripts/refs/heads/main/agents/data-story/SKILL.md">data-story skill</a>. All findings and charts are calculated from the saved results in your browser.</p></section>
+    </div>
+    <noscript><p>Enable JavaScript to calculate the story from the saved results. You can also inspect the <a href="eval2/manifest.json">data manifest</a>.</p></noscript>
+    <footer class="story-footer"><span>COUNT / COMPARE</span><a href="compare.html">02 / Explore the data →</a></footer>
   </main>
 </body>
 </html>

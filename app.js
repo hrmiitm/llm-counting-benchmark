@@ -187,7 +187,9 @@ function order(a, b, direction) {
 function shade(element, deviation) {
   if (deviation === null) return;
   const t = Math.max(0, Math.min(deviation / 100, 1));
-  const stops = [[182, 224, 196], [247, 227, 160], [237, 175, 167]];
+  const stops = document.documentElement.dataset.theme === 'dark'
+    ? [[42, 79, 59], [90, 76, 35], [99, 49, 46]]
+    : [[182, 224, 196], [247, 227, 160], [237, 175, 167]];
   const local = t < .5 ? t * 2 : (t - .5) * 2, a = t < .5 ? stops[0] : stops[1], b = t < .5 ? stops[1] : stops[2];
   element.style.backgroundColor = `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * local)).join(',')})`;
 }
@@ -246,8 +248,8 @@ function renderGroup(group) {
   const table = node('table'); table.style.minWidth = `${(compact ? 168 : 240) + imageList.length * 155 + 174}px`;
   table.setAttribute('aria-label', `Group ${group.id} model counting comparison`);
   const thead = node('thead'), headers = node('tr');
-  function sortRows(key, direction) { sorts.rows = { key, direction }; redraw(); }
-  function sortColumns(model, direction) { sorts.columns = { model, direction }; redraw(); }
+  function sortRows(key, direction) { sorts.rows = { key, direction }; redraw(); saveCompareView(); }
+  function sortColumns(model, direction) { sorts.columns = { model, direction }; redraw(); saveCompareView(); }
   function redraw() {
     const x = wrap.scrollLeft, y = wrap.scrollTop;
     const replacement = renderGroup(group); section.replaceWith(replacement);
@@ -381,6 +383,7 @@ function renderSummary() {
   wrap.append(table); section.append(heading, wrap);
   if (rows.some(row => row.unknown || row.unknownTime)) section.append(node('p', '* Partial total: some values are unknown.', 'summary-note'));
   $('#model-summary').append(section);
+  saveCompareView();
 }
 function render() {
   const rows = visibleRows();
@@ -392,6 +395,7 @@ function render() {
     const section = renderGroup(group); if (section) $('#results').append(section);
   }
   if (!$('#results').children.length) $('#results').append(node('p', 'No matching results.', 'empty'));
+  saveCompareView();
 }
 function renderWarnings() {
   const warnings = [...new Set(state.warnings)]; $('#warnings').hidden = !warnings.length;
@@ -409,6 +413,7 @@ async function load() {
       else state.warnings.push(`${paths[i]}: ${result.reason.message}`);
     });
     state.groups = organize(sources); state.files = sources.length;
+    restoreCompareView();
     const images = state.groups.reduce((sum, group) => sum + group.images.length, 0);
     const configurations = new Set(state.groups.flatMap(group => group.models.map(model => model.key))).size;
     $('#summary').textContent = `${configurations} configurations · ${images} images · ${sources.length} files`;
@@ -431,6 +436,48 @@ async function load() {
     state.warnings.push(error.message);
   } finally { renderWarnings(); $('#reload').disabled = false; }
 }
+function saveCompareView() {
+  const params = new URLSearchParams();
+  if (state.query) params.set('q', state.query);
+  if (state.group) params.set('group', state.group);
+  if (state.metric !== 'percent') params.set('metric', state.metric);
+  if (state.providerGrouping) params.set('provider', state.providerGrouping);
+  if (state.chartModel) params.set('chart', state.chartModel);
+  if (metrics.some(m => m.show !== (m.key !== 'deviation'))) params.set('show', metrics.filter(m => m.show).map(m => m.key).join(','));
+  if (state.summarySort.key !== 'deviation' || state.summarySort.direction !== 'asc') params.set('summary', JSON.stringify(state.summarySort));
+  const sorts = [...state.sorts].filter(([, s]) => s.columns || s.rows.key !== 'overall' || s.rows.direction !== 'asc');
+  if (sorts.length) params.set('sorts', JSON.stringify(sorts));
+  const url = new URL(location.href); url.hash = params.size ? `explore?${params}` : '';
+  history.replaceState(null, '', url);
+}
+function restoreCompareView() {
+  const params = new URLSearchParams(location.hash.split('?')[1] ?? '');
+  state.query = (params.get('q') ?? '').toLowerCase();
+  state.group = state.groups.some(g => g.id === params.get('group')) ? params.get('group') : '';
+  state.metric = metrics.some(m => m.key === params.get('metric')) ? params.get('metric') : 'percent';
+  state.providerGrouping = ['asc', 'desc'].includes(params.get('provider')) ? params.get('provider') : '';
+  state.chartModel = params.get('chart') ?? '';
+  for (const metric of metrics) metric.show = params.has('show') ? params.get('show').split(',').includes(metric.key) : metric.key !== 'deviation';
+  state.summarySort = { key: 'deviation', direction: 'asc' }; state.sorts.clear();
+  try {
+    const summary = JSON.parse(params.get('summary') ?? 'null');
+    if (summary && ['name', 'deviation', 'meanCost', 'meanTime', 'knownCost', 'totalTime'].includes(summary.key) && ['asc', 'desc'].includes(summary.direction)) state.summarySort = summary;
+    const raw = params.get('sorts') ?? '[]';
+    const sorts = raw.length <= 20000 ? JSON.parse(raw) : [];
+    if (Array.isArray(sorts)) for (const entry of sorts) {
+      if (!Array.isArray(entry) || entry.length !== 2) continue;
+      const [id, sort] = entry, group = state.groups.find(g => g.id === id);
+      if (!group || !sort?.rows || !['asc', 'desc'].includes(sort.rows.direction)
+          || !['overall', 'name', 'cost', ...group.images.map(i => i.key)].includes(sort.rows.key)) continue;
+      if (sort.columns && (!group.models.some(m => m.key === sort.columns.model) || !['asc', 'desc'].includes(sort.columns.direction))) continue;
+      state.sorts.set(id, { rows: sort.rows, columns: sort.columns ?? null });
+    }
+  } catch { /* Invalid shared state falls back to the default view. */ }
+  $('#search').value = state.query; $('#sort-metric').value = state.metric;
+  $('#provider-grouping').value = state.providerGrouping; $('#group-filter').value = state.group;
+  [...$('#metrics').querySelectorAll('input')].forEach((checkbox, i) => { checkbox.checked = metrics[i].show; });
+}
+window.addEventListener('hashchange', () => { if (state.groups.length) { restoreCompareView(); render(); } });
 for (const metric of metrics) {
   const label = node('label'), checkbox = node('input'); checkbox.type = 'checkbox'; checkbox.checked = metric.show;
   checkbox.addEventListener('change', () => { metric.show = checkbox.checked; render(); });
@@ -443,4 +490,5 @@ $('#group-filter').addEventListener('change', event => { state.group = event.tar
 $('#provider-grouping').addEventListener('change', event => { state.providerGrouping = event.target.value; render(); });
 $('#search').addEventListener('input', event => { state.query = event.target.value.trim().toLowerCase(); render(); });
 $('#reload').addEventListener('click', load);
+window.addEventListener('themechange', () => { if (state.groups.length) render(); });
 load();

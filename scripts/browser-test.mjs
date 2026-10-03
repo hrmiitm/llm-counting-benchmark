@@ -28,7 +28,7 @@ try {
   await command('Runtime.enable');
   await command('Page.enable');
   await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
-  await command('Page.navigate', { url: process.env.PORTAL_URL ?? 'http://127.0.0.1:8765/' });
+  await command('Page.navigate', { url: process.env.PORTAL_URL ?? 'http://127.0.0.1:8765/compare.html' });
   await command('Page.bringToFront');
   for (let attempt = 0; attempt < 100; attempt++) {
     if (await evaluate(`typeof state !== 'undefined' && !document.querySelector('#reload').disabled && state.groups.length > 0`)) break;

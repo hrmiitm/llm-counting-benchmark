@@ -73,7 +73,7 @@ function renderOverview(rows) {
   }
 }
 
-const chartPalette = ['#216552', '#b94b38', '#456eb4', '#a17820', '#8256a6', '#268a9a', '#c2678c', '#637830', '#9b6743', '#56626f'];
+const chartPalette = Array.from({ length: 10 }, (_, i) => `var(--series-${i + 1})`);
 function svgNode(tag, attributes, text) {
   const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
   for (const [key, value] of Object.entries(attributes ?? {})) element.setAttribute(key, value);
@@ -105,7 +105,7 @@ function chartFrame(type) {
 }
 function chartPoint(frame, point, color, radius, description, modelKey) {
   const dot = svgNode('circle', { cx: plotX(point.x), cy: plotY(point.y), r: radius, fill: color,
-    stroke: 'white', 'stroke-width': 1.5, tabindex: 0, role: 'button', 'aria-label': description, class: 'chart-point' });
+    stroke: 'var(--surface)', 'stroke-width': 1.5, tabindex: 0, role: 'button', 'aria-label': description, class: 'chart-point' });
   dot.dataset.config = modelKey; dot.append(svgNode('title', {}, description));
   dot.dataset.samples = point.n;
   if (point.threshold !== undefined) dot.dataset.threshold = point.threshold;
@@ -129,7 +129,7 @@ function renderCharts(rows) {
     option.value = model.key; select.append(option);
   }
   select.value = state.chartModel;
-  select.addEventListener('change', () => { state.chartModel = select.value; renderCharts(visibleRows()); $('#chart-model').focus({ preventScroll: true }); });
+  select.addEventListener('change', () => { state.chartModel = select.value; renderCharts(visibleRows()); saveCompareView(); $('#chart-model').focus({ preventScroll: true }); });
   label.append(select); heading.append(node('h2', 'Confidence'), label);
   const shown = ordered.filter(row => !state.chartModel || row.model.key === state.chartModel);
   const legend = node('div', undefined, 'chart-legend');
@@ -143,7 +143,7 @@ function renderCharts(rows) {
     const color = chartPalette[index] ?? `hsl(${index * 137.508 % 360} 55% 40%)`;
     const item = node('button'); item.type = 'button'; item.title = `${row.model.name} · T ${row.model.temp ?? 'omitted'} · ${row.model.effort} · ${row.model.provider} · ${row.model.maxTokens ?? 'unknown'} tokens`;
     item.setAttribute('aria-label', `Show charts for ${configurationName(row.model)}`);
-    item.addEventListener('click', () => { state.chartModel = state.chartModel === row.model.key ? '' : row.model.key; renderCharts(visibleRows()); $('#chart-model').focus({ preventScroll: true }); });
+    item.addEventListener('click', () => { state.chartModel = state.chartModel === row.model.key ? '' : row.model.key; renderCharts(visibleRows()); saveCompareView(); $('#chart-model').focus({ preventScroll: true }); });
     const swatch = node('i'); swatch.style.backgroundColor = color; swatch.setAttribute('aria-hidden', 'true');
     item.append(swatch, document.createTextNode(configurationName(row.model, true))); legend.append(item);
     const samples = confidenceSamples(row); sampleCount += samples.length; sizes.push(samples.length);

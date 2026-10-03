@@ -1,0 +1,15 @@
+.page-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 1680px; margin: auto; padding: 18px 28px; border-bottom: 1px solid var(--line); font: 13px/1.4 ui-sans-serif, system-ui, sans-serif; }
+.page-nav a { color: var(--muted); text-decoration: none; }
+.page-nav .page-brand { color: var(--text); font-size: 12px; font-weight: 750; letter-spacing: .1em; }
+.page-nav > div { display: flex; gap: 26px; }
+.page-nav > div a { display: flex; gap: 8px; padding: 4px 0; }
+.page-nav a[aria-current] { color: var(--accent); font-weight: 700; box-shadow: 0 2px var(--accent); }
+.page-nav a:hover { color: var(--accent); }
+.page-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+@media (max-width: 650px) { .page-nav { padding: 15px 16px; } .page-nav > div { gap: 16px; } .page-nav .page-brand { max-width: 74px; font-size: 10px; } .page-nav > div a { gap: 5px; font-size: 12px; } }
+
+.page-nav > div { margin-left: auto; }
+.theme-toggle { border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--text); min-height: 44px; padding: 8px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
+.theme-toggle:hover { background: var(--hover); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+@media (max-width: 600px) { .page-nav { display: grid; grid-template-columns: 1fr auto; gap: 8px 18px; } .page-nav .page-brand { max-width: none; font-size: 11px; } .page-nav > div { grid-column: 1 / -1; grid-row: 2; margin: 0; justify-content: space-between; } .theme-toggle { grid-column: 2; grid-row: 1; font-size: 12px; } .page-nav > div a { min-height: 44px; align-items: center; } }
