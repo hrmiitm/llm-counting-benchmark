@@ -1,0 +1,651 @@
+{
+  "run_id": "2026-10-03T11:03:45.271545+00:00",
+  "model": "deepseek/deepseek-v4-flash-vision-exp",
+  "model_temp": 0,
+  "prompt": "Count the {label} in this image. Report confidence between 0 and 1 as the probability your count is exactly correct, considering alternative counts. Use 0.95 for 95% confidence. Low confidence is acceptable.",
+  "max_tokens": 4096,
+  "provider_endpoint": "deepinfra/fp8",
+  "allow_fallbacks": false,
+  "tools": [],
+  "tool_choice": "none",
+  "reasoning": {
+    "enabled": true,
+    "effort": "low",
+    "exclude": true
+  },
+  "confidence_scale": "0-1",
+  "results": [
+    {
+      "group": "1",
+      "id": "1",
+      "image": "813.jpg",
+      "label": "bottle caps",
+      "model": "deepseek/deepseek-v4-flash-vision-exp",
+      "model_temp": 0,
+      "run_id": "2026-10-03T11:03:45.271545+00:00",
+      "reasoning_effort": "low",
+      "provider_endpoint": "deepinfra/fp8",
+      "started_at_utc": "2026-10-03T11:06:33.345582+00:00",
+      "model_count": 310,
+      "confidence": 0.05,
+      "cost_usd": 0.0016616292,
+      "usage": {
+        "completion_tokens": 2474,
+        "prompt_tokens": 285,
+        "total_tokens": 2759,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 2458,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.0016616292,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.0016616292,
+          "upstream_inference_prompt_cost": 6.1446e-05,
+          "upstream_inference_completions_cost": 0.0016001832
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791025593-jlPalvP8oSl13x0wbB6I",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\": 310, \"confidence\": 0.05}",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "stop"
+          }
+        ],
+        "created": 1791025593,
+        "model": "deepseek/deepseek-v4-flash-vision-exp",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 2474,
+          "prompt_tokens": 285,
+          "total_tokens": 2759,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 2458,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.0016616292,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0016616292,
+            "upstream_inference_prompt_cost": 6.1446e-05,
+            "upstream_inference_completions_cost": 0.0016001832
+          }
+        },
+        "provider": "DeepInfra"
+      },
+      "generation_id": "gen-1791025593-jlPalvP8oSl13x0wbB6I",
+      "response_provider": "DeepInfra",
+      "latency_seconds": 24.716261436000423,
+      "finished_at_utc": "2026-10-03T11:06:58.061929+00:00"
+    },
+    {
+      "group": "1",
+      "id": "2",
+      "image": "869.jpg",
+      "label": "books",
+      "model": "deepseek/deepseek-v4-flash-vision-exp",
+      "model_temp": 0,
+      "run_id": "2026-10-03T11:03:45.271545+00:00",
+      "reasoning_effort": "low",
+      "provider_endpoint": "deepinfra/fp8",
+      "started_at_utc": "2026-10-03T11:07:00.063446+00:00",
+      "model_count": 186,
+      "confidence": 0.2,
+      "cost_usd": 0.0011748044,
+      "usage": {
+        "completion_tokens": 1719,
+        "prompt_tokens": 292,
+        "total_tokens": 2011,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 1703,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.0011748044,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.0011748044,
+          "upstream_inference_prompt_cost": 6.29552e-05,
+          "upstream_inference_completions_cost": 0.0011118492
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791025620-GToj4OjVvdCJiMtioEL1",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\": 186, \"confidence\": 0.2}",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "stop"
+          }
+        ],
+        "created": 1791025620,
+        "model": "deepseek/deepseek-v4-flash-vision-exp",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 1719,
+          "prompt_tokens": 292,
+          "total_tokens": 2011,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 1703,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.0011748044,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0011748044,
+            "upstream_inference_prompt_cost": 6.29552e-05,
+            "upstream_inference_completions_cost": 0.0011118492
+          }
+        },
+        "provider": "DeepInfra"
+      },
+      "generation_id": "gen-1791025620-GToj4OjVvdCJiMtioEL1",
+      "response_provider": "DeepInfra",
+      "latency_seconds": 15.302292489001047,
+      "finished_at_utc": "2026-10-03T11:07:15.365806+00:00"
+    },
+    {
+      "group": "1",
+      "id": "3",
+      "image": "1084.jpg",
+      "label": "buffaloes",
+      "model": "deepseek/deepseek-v4-flash-vision-exp",
+      "model_temp": 0,
+      "run_id": "2026-10-03T11:03:45.271545+00:00",
+      "reasoning_effort": "low",
+      "provider_endpoint": "deepinfra/fp8",
+      "started_at_utc": "2026-10-03T11:07:17.368207+00:00",
+      "model_count": 300,
+      "confidence": 0.1,
+      "cost_usd": 0.001662276,
+      "usage": {
+        "completion_tokens": 2475,
+        "prompt_tokens": 285,
+        "total_tokens": 2760,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 2458,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.001662276,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.001662276,
+          "upstream_inference_prompt_cost": 6.1446e-05,
+          "upstream_inference_completions_cost": 0.00160083
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791025637-ZMvdSZ6sy53UFgeRh9DT",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{ \"count\": 300, \"confidence\": 0.1 }",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "stop"
+          }
+        ],
+        "created": 1791025637,
+        "model": "deepseek/deepseek-v4-flash-vision-exp",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 2475,
+          "prompt_tokens": 285,
+          "total_tokens": 2760,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 2458,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.001662276,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.001662276,
+            "upstream_inference_prompt_cost": 6.1446e-05,
+            "upstream_inference_completions_cost": 0.00160083
+          }
+        },
+        "provider": "DeepInfra"
+      },
+      "generation_id": "gen-1791025637-ZMvdSZ6sy53UFgeRh9DT",
+      "response_provider": "DeepInfra",
+      "latency_seconds": 18.27262367000003,
+      "finished_at_utc": "2026-10-03T11:07:35.640906+00:00"
+    },
+    {
+      "group": "1",
+      "id": "4",
+      "image": "2373.jpg",
+      "label": "bricks",
+      "model": "deepseek/deepseek-v4-flash-vision-exp",
+      "model_temp": 0,
+      "run_id": "2026-10-03T11:03:45.271545+00:00",
+      "reasoning_effort": "low",
+      "provider_endpoint": "deepinfra/fp8",
+      "started_at_utc": "2026-10-03T11:07:37.643249+00:00",
+      "model_count": 400,
+      "confidence": 0.95,
+      "cost_usd": 0.0016588264,
+      "usage": {
+        "completion_tokens": 2474,
+        "prompt_tokens": 272,
+        "total_tokens": 2746,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 2458,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.0016588264,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.0016588264,
+          "upstream_inference_prompt_cost": 5.86432e-05,
+          "upstream_inference_completions_cost": 0.0016001832
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791025657-Ic2FVSCW5HlspgUp0Tsk",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\": 400, \"confidence\": 0.95}",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "stop"
+          }
+        ],
+        "created": 1791025657,
+        "model": "deepseek/deepseek-v4-flash-vision-exp",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 2474,
+          "prompt_tokens": 272,
+          "total_tokens": 2746,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 2458,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.0016588264,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0016588264,
+            "upstream_inference_prompt_cost": 5.86432e-05,
+            "upstream_inference_completions_cost": 0.0016001832
+          }
+        },
+        "provider": "DeepInfra"
+      },
+      "generation_id": "gen-1791025657-Ic2FVSCW5HlspgUp0Tsk",
+      "response_provider": "DeepInfra",
+      "latency_seconds": 19.504128929000217,
+      "finished_at_utc": "2026-10-03T11:07:57.147479+00:00"
+    },
+    {
+      "group": "1",
+      "id": "5",
+      "image": "2648.jpg",
+      "label": "cement bags",
+      "model": "deepseek/deepseek-v4-flash-vision-exp",
+      "model_temp": 0,
+      "run_id": "2026-10-03T11:03:45.271545+00:00",
+      "reasoning_effort": "low",
+      "provider_endpoint": "deepinfra/fp8",
+      "started_at_utc": "2026-10-03T11:07:59.150548+00:00",
+      "model_count": 80,
+      "confidence": 0.95,
+      "cost_usd": 0.0015197644,
+      "usage": {
+        "completion_tokens": 2252,
+        "prompt_tokens": 293,
+        "total_tokens": 2545,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 2235,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.0015197644,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.0015197644,
+          "upstream_inference_prompt_cost": 6.31708e-05,
+          "upstream_inference_completions_cost": 0.0014565936
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791025679-ZX7xrwQbwhQ8EecBBqVa",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{ \"count\": 80, \"confidence\": 0.95 }",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "stop"
+          }
+        ],
+        "created": 1791025679,
+        "model": "deepseek/deepseek-v4-flash-vision-exp",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 2252,
+          "prompt_tokens": 293,
+          "total_tokens": 2545,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 2235,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.0015197644,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.0015197644,
+            "upstream_inference_prompt_cost": 6.31708e-05,
+            "upstream_inference_completions_cost": 0.0014565936
+          }
+        },
+        "provider": "DeepInfra"
+      },
+      "generation_id": "gen-1791025679-ZX7xrwQbwhQ8EecBBqVa",
+      "response_provider": "DeepInfra",
+      "latency_seconds": 21.548262467000313,
+      "finished_at_utc": "2026-10-03T11:08:20.698889+00:00"
+    },
+    {
+      "group": "1",
+      "id": "6",
+      "image": "2933.jpg",
+      "label": "stamps",
+      "model": "deepseek/deepseek-v4-flash-vision-exp",
+      "model_temp": 0,
+      "run_id": "2026-10-03T11:03:45.271545+00:00",
+      "reasoning_effort": "low",
+      "provider_endpoint": "deepinfra/fp8",
+      "started_at_utc": "2026-10-03T11:08:22.701778+00:00",
+      "model_count": 41,
+      "confidence": 0.98,
+      "cost_usd": 0.000529298,
+      "usage": {
+        "completion_tokens": 737,
+        "prompt_tokens": 244,
+        "total_tokens": 981,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 720,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.000529298,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.000529298,
+          "upstream_inference_prompt_cost": 5.26064e-05,
+          "upstream_inference_completions_cost": 0.0004766916
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791025703-6atJSOdookqGJ5bdWnKC",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\": 41, \"confidence\": 0.98 }",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "stop"
+          }
+        ],
+        "created": 1791025703,
+        "model": "deepseek/deepseek-v4-flash-vision-exp",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 737,
+          "prompt_tokens": 244,
+          "total_tokens": 981,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 720,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.000529298,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.000529298,
+            "upstream_inference_prompt_cost": 5.26064e-05,
+            "upstream_inference_completions_cost": 0.0004766916
+          }
+        },
+        "provider": "DeepInfra"
+      },
+      "generation_id": "gen-1791025703-6atJSOdookqGJ5bdWnKC",
+      "response_provider": "DeepInfra",
+      "latency_seconds": 7.009168545999273,
+      "finished_at_utc": "2026-10-03T11:08:29.711018+00:00"
+    }
+  ],
+  "known_cost_usd": 0.0082065984,
+  "calls_with_unknown_cost": 0
+}

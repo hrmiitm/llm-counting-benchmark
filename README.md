@@ -1,5 +1,72 @@
 # LLM Counting Benchmark
 
+## Six-image confidence and cost pilot (`main3.py`)
+
+Configure `.env`, choose entries in `MODELS`, then run manually:
+
+```bash
+uv run --with openai --with python-dotenv main3.py
+```
+
+Uses the official OpenAI Python SDK with OpenRouter and Pydantic validation.
+Only the six Group 1 images are evaluated, with one prompt, temperature 0 for
+non-GPT models and temperature omitted for GPT models (saved as `model_temp: null`).
+It uses JSON-schema output, low reasoning effort, no tools/plugins, and no automatic SDK
+retries. Confidence is a probability between 0 and 1 (0.95 means 95%). Each model
+is pinned to one endpoint in `PROVIDERS`; provider fallbacks are disabled.
+DeepSeek uses DeepInfra FP8, Gemini uses Google AI Studio, GPT uses OpenAI,
+Haiku uses Anthropic, and Sonnet uses Azure Global (its catalog advertises
+temperature support). An unavailable or incompatible pinned endpoint produces
+a logged failure. Requested endpoint and reported provider are saved.
+Reasoning text is excluded from responses, but reasoning tokens are still billed
+and included in usage. `MAX_TOKENS = 4096` gives room for reasoning plus the
+final JSON answer; this is an upper bound, not a target. Truncated answers are
+logged without retrying.
+
+The catalog check skips models lacking image, structured-output or reasoning
+support, non-GPT models lacking temperature support, and models explicitly
+listing reasoning efforts without `low`. Gemini 3.1 uses Flash Lite; DeepSeek uses V4.1 Flash
+and V4 Flash Vision Exp.
+
+Each model's `eval2/{model}_temp{0|default}_reasoning-low_group1.json` stores the configuration and a
+`results` array with only group, ID, image, and label from metadata, predicted count,
+confidence, latency, timestamps, token usage, generation ID,
+raw response, and API-reported `cost_usd`. It saves after each image. Missing
+cost stays `null`; `known_cost_usd` excludes unknown charges, and
+`calls_with_unknown_cost` reports how many attempted calls lack cost data.
+No ground-truth counts or accuracy/error/calibration metrics are saved or
+calculated; ground truth can be joined later using the group and image fields.
+Existing result files keep their previous format until that model is rerun.
+Requests explicitly set `tools=[]` and `tool_choice="none"`; no search plugins
+or search parameters are supplied. Failure logs describe request/validation
+problems only, not counting errors against ground truth. GPT 6.1 Sol remains
+removed from the selected models.
+
+Failures and skipped calls append reasons to `eval2/failures.jsonl`. Rerunning
+replaces model result files and makes new calls; it does not resume prior
+successes. At most 54 image calls per invocation. Result envelopes are separate
+from the existing website's array format.
+
+Syntax check without API calls:
+
+```bash
+python3 -m py_compile main3.py
+```
+
+One-image smoke test (real, billable calls; no automatic retries):
+
+```bash
+uv run --with openai --with python-dotenv smoke_test.py
+```
+
+Uses the first Group 1 image (`813.jpg`) once per enabled model in `MODELS`,
+with exactly the same requests and validation as `main3.py`. Results and logs
+go to `eval2/smoke-test/`, separate from benchmark results. It prints count,
+confidence, cost, output/reasoning tokens, failure reasons, and token-limit
+warnings. Exit code is 1 if any model failed or was skipped, otherwise 0.
+At most nine image calls with the current model list. Passing this image does
+not guarantee that the other images fit the token budget or succeed.
+
 Counts labeled objects in the images in `data/group1` and `data/group2` using vision models through an OpenRouter-compatible API.
 
 ## Run
