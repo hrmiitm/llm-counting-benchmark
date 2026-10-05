@@ -8,10 +8,10 @@
   <script src="theme.js?v=2"></script>
   <link rel="stylesheet" href="theme.css?v=2">
   <title>Count / Compare</title>
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
   <link rel="stylesheet" href="navigation.css?v=2">
   <script src="charts.js?v=2" defer></script>
-  <script src="app.js?v=2" defer></script>
+  <script src="app.js?v=3" defer></script>
 </head>
 <body>
   <nav class="page-nav" aria-label="Benchmark pages"><a class="page-brand" href="index.html">COUNT / COMPARE</a><div><a href="index.html">01 <span>The story</span></a><a href="compare.html" aria-current="page">02 <span>Explore the data</span></a></div><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">Dark mode</button></nav>
@@ -39,12 +39,18 @@
     <div id="model-summary"></div>
     <div id="results" aria-live="polite"></div>
     <footer>
+      <section class="data-sources" aria-labelledby="data-sources-heading">
+        <h2 id="data-sources-heading">Data sources</h2>
+        <p class="dataset-source">Images: selected samples from <a href="https://github.com/cvlab-stonybrook/LearningToCountEverything#dataset-download">FSC-147 / Learning To Count Everything</a>, by Viresh Ranjan, Udbhav Sharma, Thu Nguyen, and Minh Hoai (CVPR 2021). <a href="https://drive.google.com/file/d/1ymDYrGs9DSRicfZbSCDiOu0ikGDh5k6S/view?usp=sharing">Download the source images</a> · <a href="https://arxiv.org/abs/2104.08391">Paper</a> · <a href="data/data_source.txt">Recorded download URL</a>. The saved pilot covers six Group 1 images, not the full FSC-147 benchmark.</p>
+        <p>Ground truth: <a href="eval2/metadata.json">supplied benchmark metadata</a>, joined by group and image. These counts have not been independently audited here. Predictions, confidence, costs, and latency: saved <a href="main3.py">benchmark script</a> outputs indexed by the <a href="eval2/manifest.json">data manifest</a>. This explorer can also include additional runs and smoke tests.</p>
+        <details class="method-notes"><summary>Loaded JSON source files</summary><ul id="loaded-source-links"><li>Loading source files…</li></ul></details>
+      </section>
       <details class="method-notes"><summary>How to read</summary>
         <p>% deviation = |predicted − actual| / actual × 100; Δ count = predicted − actual. Mean deviation weights images equally, excluding missing predictions and zero actual counts. Confidence is P(exact count); chart accuracy requires an exact match.</p>
         <p>Header arrows sort models; model-row arrows sort images. Provider grouping keeps sorts within providers. Missing values stay last. Cost/time means exclude missing values and skipped calls; totals include known failed-call charges. * marks a partial total. Times are summed request latencies, not wall time.</p>
         <p>Latest record wins per image/configuration. Totals cover displayed records. Charts omit invalid confidence and ambiguous ground truth; coverage includes all images with known ground truth. Equal-confidence answers share one cutoff.</p>
       </details>
-      <p>JSON: <code>eval2/</code> · images: <code>data/</code> · <span id="loaded-at"></span> · <a href="https://sanand0.github.io/llmevals/confidence-calibration/" target="_blank" rel="noopener">Chart reference</a></p>
+      <p><span id="loaded-at"></span> · <a href="https://sanand0.github.io/llmevals/confidence-calibration/" target="_blank" rel="noopener">Chart reference</a></p>
     </footer>
     <noscript>Enable JavaScript to load the result files.</noscript>
   </main>

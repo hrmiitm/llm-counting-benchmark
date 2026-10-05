@@ -111,6 +111,9 @@ tbody tr:hover .model-cell { background: var(--hover); }
 .summary-note { font-size: 13px; color: var(--muted); margin: 7px 1px 0; }
 footer { font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 16px; max-width: 1180px; }
 footer p { margin: 8px 0; }
+.data-sources { border-top: 1px solid var(--line); padding-top: 16px; margin-bottom: 16px; }
+.data-sources p, #loaded-source-links { overflow-wrap: anywhere; }
+#loaded-source-links { padding-left: 20px; }
 .method-notes summary { cursor: pointer; color: var(--accent); font-weight: 600; }
 code { font-size: inherit; }
 #warnings { font-size: 14px; border: 1px solid var(--line); background: var(--warning-bg); border-radius: 6px; padding: 9px 12px; margin: 0 0 12px; color: var(--warning-ink); }

@@ -404,6 +404,7 @@ function renderWarnings() {
 }
 async function load() {
   $('#reload').disabled = true; state.warnings = []; $('#summary').textContent = 'Loading results…';
+  $('#loaded-source-links').replaceChildren(node('li', 'Loading source files…'));
   try {
     const paths = await discover();
     const responses = await Promise.allSettled(paths.map(async path => ({ path, data: await fetchJSON(path) })));
@@ -413,6 +414,11 @@ async function load() {
       else state.warnings.push(`${paths[i]}: ${result.reason.message}`);
     });
     state.groups = organize(sources); state.files = sources.length;
+    $('#loaded-source-links').replaceChildren(...sources.map(({ path }) => {
+      const item = node('li'), link = node('a', path);
+      link.href = jsonURL(path); item.append(link); return item;
+    }));
+    if (!sources.length) $('#loaded-source-links').append(node('li', 'No JSON source files loaded.'));
     restoreCompareView();
     const images = state.groups.reduce((sum, group) => sum + group.images.length, 0);
     const configurations = new Set(state.groups.flatMap(group => group.models.map(model => model.key))).size;
@@ -427,6 +433,7 @@ async function load() {
     if (state.groups.some(group => group.images.some(image => image.actual === null))) state.warnings.push('Some images have no ground truth. Add their group/image/actual-count records to an eval2 metadata JSON file.');
     render();
   } catch (error) {
+    $('#loaded-source-links').replaceChildren(node('li', 'Source files unavailable; inspect the data manifest above.'));
     $('#summary').textContent = 'Could not load results';
     $('#model-summary').replaceChildren();
     $('#confidence-charts').replaceChildren();
