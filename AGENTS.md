@@ -10,6 +10,12 @@ experiments, not the current website's default data source.
 
 ## Current project layout
 
+- `DL-MODELS/`: isolated local CountGD, CounTX, FamNet, YOLO-World-S and CountGD++
+  setups/runners. Read its README before changes. `results/` contains one
+  configuration/result JSON per model; these are separate from website `eval2/`.
+  Environments, upstream checkouts, weights and caches are ignored. Run models
+  sequentially on this CPU machine; no working CUDA driver was detected.
+
 - `main3.py`: OpenAI SDK requests through the configured OpenRouter-compatible
   endpoint; model list is `MODELS`, endpoint pins are `PROVIDERS`.
 - `smoke_test.py`: one Group 1 image per enabled model using `main3.py`;
@@ -22,6 +28,10 @@ experiments, not the current website's default data source.
 - `index.html`, `story.js`, `story.css`: narrative for the saved original pilot.
 - `compare.html`, `app.js`, `charts.js`, `styles.css`: explorer for all discovered
   `eval2/` JSON, including subfolders, older arrays, and metadata arrays.
+- `insights.html`, `insights.js`, `insights-data.mjs`, `insights.css`: third page;
+  original nine LLMs plus the five current local model JSONs. Confidence charts
+  use LLM P(exact count) only; comparison uses unrounded count deviation. The
+  optional validation/test subset excludes three FSC-147 training images.
 - `theme.js`, `theme.css`, `navigation.css`: shared themes and navigation.
   `vendor/d3.min.js` is used by the story cost chart; keep its license.
 - `build_manifest.py`: recursively rebuilds `eval2/manifest.json`; no API calls.
@@ -70,6 +80,14 @@ experiments, not the current website's default data source.
   Earlier runners may preserve full metadata; do not apply that rule to `main3.py`.
 - Preserve saved prediction, confidence, usage, raw response, configuration,
   cost, latency, and timestamp fields. Failures can still have billed costs.
+- Local DL runners never read `.env` or pass gold counts/dot annotations to a
+  predictor. FamNet uses explicitly recorded exemplar boxes. Preserve density
+  estimates without rounding; detection scores are not P(exact count), so count
+  confidence stays null. Record immutable source/checkpoint references, hashes,
+  full dependency locks, configuration, device, timings and genuine failures.
+  Compare text-only and exemplar-assisted settings separately. Three selected
+  images are in FSC-147's training split; do not claim an independent held-out
+  evaluation for checkpoints trained on that dataset.
 - Rerunning `main3.py` replaces the model/configuration result file and makes
   new calls; it does not resume. Do not silently overwrite the original pilot.
 - `story.js` selects the original run ID `2026-10-03T11:03:45.271545+00:00`,
@@ -80,9 +98,18 @@ experiments, not the current website's default data source.
   sorted paths break ties. Conflicting ground truths disable scoring for that image.
 - Keep page-relative URLs working under the GitHub Pages repository subpath,
   accessible controls, mobile layouts, both themes, and bookmarkable chart/filter states.
+- Page 3 requires all 14 complete model files before displaying conclusions.
+  Keep its mixed-split/exemplar-input caveats visible. A small mean confidence
+  versus accuracy gap alone is not evidence of calibration; Brier scores also
+  remain exploratory with only six answers per LLM. Do not invent undisclosed
+  LLM vision backbones. Verify with `scripts/insights-data-test.mjs` and
+  `scripts/insights-browser-test.mjs` when changing this page.
 - Rebuild the manifest after adding/removing JSON files. Publish both pages,
   their scripts/styles/vendor files, manifest and indexed JSON, corresponding
   images, `data/data_source.txt`, and `main3.py` so source links resolve.
+- Also publish page 3's HTML/JS/MJS/CSS, the five current DL result JSONs,
+  `DL-MODELS/dataset-info.json`, and its README. Its direct DL file references
+  intentionally do not add local-model runs to the `eval2/` manifest.
 
 ## Verification without model API calls
 

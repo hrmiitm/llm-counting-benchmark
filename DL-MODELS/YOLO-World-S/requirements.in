@@ -1,0 +1,5 @@
+torch==2.8.0+cpu
+torchvision==0.23.0+cpu
+ultralytics==8.4.63
+openai-clip==1.0.1
+setuptools==75.6.0

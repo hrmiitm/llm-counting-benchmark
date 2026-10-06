@@ -1,0 +1,526 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-10-06T05:09:12.575293+00:00",
+  "model": "FamNet",
+  "model_temp": null,
+  "model_type": "deep learning",
+  "configuration": {
+    "model": "FamNet",
+    "architecture": "ResNet50 CNN features, exemplar correlation and density regressor",
+    "input_mode": "all supplied official FSC-147 visual exemplars; no text; no adaptation",
+    "source": {
+      "repository": "cvlab-stonybrook/LearningToCountEverything",
+      "commit": "00ea1888c3a7c495ae06db0bddc3b90b7db8d52f"
+    },
+    "checkpoint": "upstream/data/pretrainedModels/FamNet_Save1.pth",
+    "inference": {
+      "max_image_dimension": 1504,
+      "feature_maps": [
+        "map3",
+        "map4"
+      ],
+      "exemplar_scales": [
+        0.9,
+        1.1
+      ],
+      "pool": "mean",
+      "test_time_adaptation": false,
+      "count_rounding": "none"
+    },
+    "exemplars": "exemplars.json",
+    "backbone_url": "https://download.pytorch.org/models/resnet50-0676ba61.pth",
+    "timing_scope": "CNN features, exemplar matching and density regressor forward",
+    "runtime": {
+      "device": "cpu",
+      "threads": 4,
+      "seed": 42,
+      "deterministic_algorithms": true,
+      "inputs_sha256": "914e5f82a6758182b7ec185c82252833d335a527bb749dad65c880c5e6dd6177",
+      "requirements_lock_sha256": "05385e39a32d18d4790377a2ce49183bbef1da352885ec8c8c653e4868fae8a8",
+      "runner_sha256": "c408df59cb369a656994b3bd8dfaaafef54b1621a933cdb219f372b4342893d3",
+      "common_sha256": "a634c5937f76d9bea3dd2fbfcffc83e0add5585b012838a2afdc46cefe63d2d7",
+      "detector_sha256": null,
+      "compute_hourly_usd": null,
+      "exemplars_sha256": "abad55f2f2447eb14e603ab1499d6057c62148e9b6ed4098162dfb4c0eeecebe"
+    }
+  },
+  "config_sha256": "93eb060586514ea78095fc96061cc63fc915e468ad1f475c100d7f5d70ee740a",
+  "prompt_version": "93eb060586514ea78095fc96061cc63fc915e468ad1f475c100d7f5d70ee740a",
+  "prompt": "all supplied official FSC-147 visual exemplars; no text; no adaptation",
+  "confidence_scale": "0-1",
+  "confidence_note": "P(exact count) unavailable; object scores are separate.",
+  "cost_note": "No inference API calls. Compute estimate prices per-image latency only; excludes setup/idle time and is not a hosting invoice.",
+  "timing_note": "Setup includes load/hash verification. Per-image latency includes image loading, preprocessing, prompt encoding, model forward, postprocessing and artifact saving. inference_seconds measures the forward path separately. First image can include a cold forward unless warmup is recorded.",
+  "provider_endpoint": "local-cpu",
+  "tools": [],
+  "reasoning": {
+    "enabled": false
+  },
+  "status": "success",
+  "hardware": {
+    "platform": "Linux-7.1.7-200.fc44.x86_64-x86_64-with-glibc2.43",
+    "architecture": "x86_64"
+  },
+  "runner_sha256": "c408df59cb369a656994b3bd8dfaaafef54b1621a933cdb219f372b4342893d3",
+  "common_sha256": "a634c5937f76d9bea3dd2fbfcffc83e0add5585b012838a2afdc46cefe63d2d7",
+  "results": [
+    {
+      "group": "1",
+      "id": "1",
+      "image": "813.jpg",
+      "label": "bottle caps",
+      "image_sha256": "555d658ea2e853014bcd15109ec1ad07103825611a5dc0a6e13f0876184eca17",
+      "run_id": "2026-10-06T05:09:12.575293+00:00",
+      "model": "FamNet",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:14.444075+00:00",
+      "model_count": 204.5449676513672,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.5667286610005249,
+      "inference_seconds": 0.5550542879991553,
+      "raw_response": {
+        "density_map": "results/artifacts/FamNet/93eb060586514ea78095fc96061cc63fc915e468ad1f475c100d7f5d70ee740a/813.jpg.npy",
+        "density_sha256": "97ad29b9ba8139cb2e654cb7897d66abbbfc35495ec1e9a5a6d100a7e5d11636",
+        "density_shape": [
+          1,
+          1,
+          384,
+          576
+        ],
+        "exemplar_boxes_yxyx": [
+          [
+            143,
+            253,
+            175,
+            287
+          ],
+          [
+            63,
+            302,
+            96,
+            334
+          ],
+          [
+            178,
+            232,
+            213,
+            265
+          ]
+        ],
+        "dataset_split": "val",
+        "preprocessed_shape": [
+          3,
+          384,
+          572
+        ]
+      },
+      "finished_at_utc": "2026-10-06T05:09:15.010819+00:00"
+    },
+    {
+      "group": "1",
+      "id": "2",
+      "image": "869.jpg",
+      "label": "books",
+      "image_sha256": "f923847c8289981e49909d43b24c87dbe7680e071e55cfa511afb7a4dbbd04c9",
+      "run_id": "2026-10-06T05:09:12.575293+00:00",
+      "model": "FamNet",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:15.011377+00:00",
+      "model_count": 94.3873291015625,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.9339914370011684,
+      "inference_seconds": 0.9299306230004731,
+      "raw_response": {
+        "density_map": "results/artifacts/FamNet/93eb060586514ea78095fc96061cc63fc915e468ad1f475c100d7f5d70ee740a/869.jpg.npy",
+        "density_sha256": "40227c412a2641af787703cb0b1b1f0ec48bbce2b3f5278481f236a30589cbda",
+        "density_shape": [
+          1,
+          1,
+          384,
+          616
+        ],
+        "exemplar_boxes_yxyx": [
+          [
+            204,
+            108,
+            240,
+            117
+          ],
+          [
+            293,
+            297,
+            306,
+            371
+          ],
+          [
+            269,
+            162,
+            323,
+            170
+          ],
+          [
+            139,
+            291,
+            193,
+            306
+          ],
+          [
+            70,
+            261,
+            117,
+            269
+          ]
+        ],
+        "dataset_split": "val",
+        "preprocessed_shape": [
+          3,
+          384,
+          612
+        ]
+      },
+      "finished_at_utc": "2026-10-06T05:09:15.945382+00:00"
+    },
+    {
+      "group": "1",
+      "id": "3",
+      "image": "1084.jpg",
+      "label": "buffaloes",
+      "image_sha256": "ef129779e7e41c7425a195c65840c387cc8ad8423d3f63993914839b8c9db757",
+      "run_id": "2026-10-06T05:09:12.575293+00:00",
+      "model": "FamNet",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:15.946000+00:00",
+      "model_count": 146.2850799560547,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.5453849920013454,
+      "inference_seconds": 0.5418701060007152,
+      "raw_response": {
+        "density_map": "results/artifacts/FamNet/93eb060586514ea78095fc96061cc63fc915e468ad1f475c100d7f5d70ee740a/1084.jpg.npy",
+        "density_sha256": "cf1006757b1832ac552b5ecb6428c3b417cfc3ce53e0b9ca703a0f9045069f21",
+        "density_shape": [
+          1,
+          1,
+          384,
+          584
+        ],
+        "exemplar_boxes_yxyx": [
+          [
+            152,
+            182,
+            174,
+            226
+          ],
+          [
+            179,
+            371,
+            206,
+            428
+          ],
+          [
+            333,
+            391,
+            355,
+            444
+          ]
+        ],
+        "dataset_split": "train",
+        "preprocessed_shape": [
+          3,
+          384,
+          582
+        ]
+      },
+      "finished_at_utc": "2026-10-06T05:09:16.491399+00:00"
+    },
+    {
+      "group": "1",
+      "id": "4",
+      "image": "2373.jpg",
+      "label": "bricks",
+      "image_sha256": "61d8c92d57be3344aa077285b3dcca456f60877b515b7c5f79d74581fcb5d8e7",
+      "run_id": "2026-10-06T05:09:12.575293+00:00",
+      "model": "FamNet",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:16.492034+00:00",
+      "model_count": 170.18777465820312,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.4900069089999306,
+      "inference_seconds": 0.48682640600054583,
+      "raw_response": {
+        "density_map": "results/artifacts/FamNet/93eb060586514ea78095fc96061cc63fc915e468ad1f475c100d7f5d70ee740a/2373.jpg.npy",
+        "density_sha256": "aacfc571993ce580a837f4da3c39d7b86442d5e5fec25202adf0f919f3cd8441",
+        "density_shape": [
+          1,
+          1,
+          384,
+          528
+        ],
+        "exemplar_boxes_yxyx": [
+          [
+            179,
+            214,
+            204,
+            286
+          ],
+          [
+            226,
+            316,
+            251,
+            385
+          ],
+          [
+            127,
+            232,
+            155,
+            303
+          ]
+        ],
+        "dataset_split": "train",
+        "preprocessed_shape": [
+          3,
+          384,
+          523
+        ]
+      },
+      "finished_at_utc": "2026-10-06T05:09:16.982053+00:00"
+    },
+    {
+      "group": "1",
+      "id": "5",
+      "image": "2648.jpg",
+      "label": "cement bags",
+      "image_sha256": "812b09db1137e628910b756f8abdfddaaf5b14f61d23566bec734926bed9dd01",
+      "run_id": "2026-10-06T05:09:12.575293+00:00",
+      "model": "FamNet",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:16.982794+00:00",
+      "model_count": 120.55415344238281,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.5949455440004385,
+      "inference_seconds": 0.5912040969997179,
+      "raw_response": {
+        "density_map": "results/artifacts/FamNet/93eb060586514ea78095fc96061cc63fc915e468ad1f475c100d7f5d70ee740a/2648.jpg.npy",
+        "density_sha256": "7a5626dae5bdef27f963b418428f0a54e8523b7707443efbb8fbb641e5cd7faa",
+        "density_shape": [
+          1,
+          1,
+          384,
+          608
+        ],
+        "exemplar_boxes_yxyx": [
+          [
+            85,
+            129,
+            117,
+            190
+          ],
+          [
+            92,
+            391,
+            124,
+            457
+          ],
+          [
+            173,
+            289,
+            207,
+            372
+          ]
+        ],
+        "dataset_split": "train",
+        "preprocessed_shape": [
+          3,
+          384,
+          606
+        ]
+      },
+      "finished_at_utc": "2026-10-06T05:09:17.577753+00:00"
+    },
+    {
+      "group": "1",
+      "id": "6",
+      "image": "2933.jpg",
+      "label": "stamps",
+      "image_sha256": "8d3359de5cfc91ea4a78a5fb7906518c48ed5007eab08c30f07e90a3803e466e",
+      "run_id": "2026-10-06T05:09:12.575293+00:00",
+      "model": "FamNet",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:17.578491+00:00",
+      "model_count": 68.40396118164062,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.40161964900107705,
+      "inference_seconds": 0.3987582259996998,
+      "raw_response": {
+        "density_map": "results/artifacts/FamNet/93eb060586514ea78095fc96061cc63fc915e468ad1f475c100d7f5d70ee740a/2933.jpg.npy",
+        "density_sha256": "cc859aed1e48db9b5a447e1ba98c06b6b0c1b638a5cdd8270dc4d86c62d74845",
+        "density_shape": [
+          1,
+          1,
+          384,
+          408
+        ],
+        "exemplar_boxes_yxyx": [
+          [
+            289,
+            255,
+            319,
+            298
+          ],
+          [
+            343,
+            291,
+            376,
+            340
+          ],
+          [
+            15,
+            62,
+            59,
+            140
+          ]
+        ],
+        "dataset_split": "test",
+        "preprocessed_shape": [
+          3,
+          384,
+          408
+        ]
+      },
+      "finished_at_utc": "2026-10-06T05:09:17.980126+00:00"
+    }
+  ],
+  "shared_code_sha256": {
+    "common.py": "a634c5937f76d9bea3dd2fbfcffc83e0add5585b012838a2afdc46cefe63d2d7",
+    "detector_setup.py": "96145c54e55462bbf9e6d7b518baf8322dcba354a3ef76914940e5ce741e4ad8",
+    "detector.py": "b913232c6c0467c290057ad7dfa052ce0f27c065066a9350fb699076e30eee9d",
+    "download_drive.py": "27c179d00d49843affd3df1ad906b3127076851dbb244e19b8d4bb290bf31866",
+    "run_all.py": "9a9c3571aea67f35861a788ba17166bc542aa7c5d39c51919f5733ebf2584350",
+    "audit.py": "45520373c9fdcc957ad8618be32da252d449d2e3a2e318716897d2fef221b36b"
+  },
+  "setup": {
+    "model": "FamNet",
+    "started_at_utc": "2026-10-06T04:23:02.473872+00:00",
+    "status": "ready",
+    "environment": {
+      "python_version_requested": "3.10.19",
+      "dependency_lock_sha256": "05385e39a32d18d4790377a2ce49183bbef1da352885ec8c8c653e4868fae8a8",
+      "packages": {
+        "six": "1.17.0",
+        "cycler": "0.12.1",
+        "MarkupSafe": "3.0.4",
+        "contourpy": "1.3.2",
+        "Jinja2": "3.1.6",
+        "filelock": "4.0.12",
+        "typing_extensions": "4.16.0",
+        "packaging": "26.3",
+        "mpmath": "1.3.0",
+        "tqdm": "4.67.1",
+        "python-dateutil": "2.9.0.post0",
+        "pyparsing": "3.3.3",
+        "kiwisolver": "1.5.1",
+        "fsspec": "2026.9.0",
+        "torchvision": "0.17.1+cpu",
+        "pillow": "10.4.0",
+        "fonttools": "4.65.0",
+        "opencv-python-headless": "4.9.0.80",
+        "matplotlib": "3.9.4",
+        "networkx": "3.4.2",
+        "numpy": "1.26.4",
+        "sympy": "1.14.0",
+        "torch": "2.2.1+cpu"
+      }
+    },
+    "assets": [
+      {
+        "url": "https://download.pytorch.org/models/resnet50-0676ba61.pth",
+        "file": "FamNet/.cache/torch/hub/checkpoints/resnet50-0676ba61.pth",
+        "sha256": "0676ba61b6795bbe1773cffd859882e5e297624d384b6993f7c9e683e722fb8a",
+        "size_bytes": 102530333,
+        "publisher_hash_verified": false
+      },
+      {
+        "file": "FamNet/upstream/data/pretrainedModels/FamNet_Save1.pth",
+        "sha256": "9fd1b35d7f9f4c1af736e4562389dd16ec2ce70a4b9c68dc61454aa631cc17c1",
+        "size_bytes": 3046232,
+        "url": "https://raw.githubusercontent.com/cvlab-stonybrook/LearningToCountEverything/00ea1888c3a7c495ae06db0bddc3b90b7db8d52f/data/pretrainedModels/FamNet_Save1.pth"
+      }
+    ],
+    "exemplars_sha256": "abad55f2f2447eb14e603ab1499d6057c62148e9b6ed4098162dfb4c0eeecebe",
+    "source_hashes": {
+      "upstream/demo.py": "babf144d35f0c415d02d3e63c50f3f42bffe28b0556975d199458b54efa3357e",
+      "upstream/model.py": "9e1f8a0e5c889a05859c44a8bde878a116f439ca6b200fe1fce2ef64f23f2b7e",
+      "upstream/test.py": "799f849695f54a58dc35d342e465e82ec53f5abba2acc07fd9c46aad95149baa",
+      "upstream/train.py": "102dfd8499733edd67a3ea0408286cbf7ab02e6727ea0bf737ed13eb12793dbb",
+      "upstream/utils.py": "36ceff8d56dec1e305dcf6285427f08ff274d991bbefa5dc53b8379c95191bbd"
+    },
+    "finished_at_utc": "2026-10-06T04:23:05.042491+00:00"
+  },
+  "dataset": {
+    "name": "six selected FSC-147 Group 1 images",
+    "source": "https://github.com/cvlab-stonybrook/LearningToCountEverything",
+    "source_commit": "00ea1888c3a7c495ae06db0bddc3b90b7db8d52f",
+    "split_file": "data/Train_Test_Val_FSC_147.json",
+    "images": {
+      "813.jpg": "val",
+      "869.jpg": "val",
+      "1084.jpg": "train",
+      "2373.jpg": "train",
+      "2648.jpg": "train",
+      "2933.jpg": "test"
+    },
+    "note": "This mixed-split pilot is not an independent held-out evaluation for FSC-147-trained checkpoints. Gold counts are excluded from predictor inputs and result rows. FamNet receives the official exemplar boxes; text-only models do not.",
+    "split_file_sha256": "e281e2d9118cd9ae6f5a2852006b6a24e7a7ea5605d9a6e0fa946dcf93308271"
+  },
+  "software": {
+    "python": "3.10.19",
+    "packages": {
+      "six": "1.17.0",
+      "cycler": "0.12.1",
+      "MarkupSafe": "3.0.4",
+      "contourpy": "1.3.2",
+      "Jinja2": "3.1.6",
+      "filelock": "4.0.12",
+      "typing_extensions": "4.16.0",
+      "packaging": "26.3",
+      "mpmath": "1.3.0",
+      "tqdm": "4.67.1",
+      "python-dateutil": "2.9.0.post0",
+      "pyparsing": "3.3.3",
+      "kiwisolver": "1.5.1",
+      "fsspec": "2026.9.0",
+      "torchvision": "0.17.1+cpu",
+      "pillow": "10.4.0",
+      "fonttools": "4.65.0",
+      "opencv-python-headless": "4.9.0.80",
+      "matplotlib": "3.9.4",
+      "networkx": "3.4.2",
+      "numpy": "1.26.4",
+      "sympy": "1.14.0",
+      "torch": "2.2.1+cpu"
+    }
+  },
+  "provenance": {
+    "checkpoint_sha256": "9fd1b35d7f9f4c1af736e4562389dd16ec2ce70a4b9c68dc61454aa631cc17c1",
+    "exemplars_sha256": "abad55f2f2447eb14e603ab1499d6057c62148e9b6ed4098162dfb4c0eeecebe"
+  },
+  "setup_seconds": 1.8647762290001992,
+  "finished_at_utc": "2026-10-06T05:09:17.980923+00:00"
+}

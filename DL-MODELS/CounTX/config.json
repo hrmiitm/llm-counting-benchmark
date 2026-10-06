@@ -1,0 +1,27 @@
+{
+  "model": "CounTX",
+  "architecture": "OpenCLIP ViT-B-16, cross-attention and CNN density decoder",
+  "input_mode": "unchanged metadata text label; no exemplars",
+  "source": {
+    "repository": "niki-amini-naieni/CounTX",
+    "commit": "6e2af6403105984c2bd2a7aec45c517e1f535c76"
+  },
+  "checkpoint": "weights/paper-model.pth",
+  "unused_checkpoint_keys": [
+    "shot_token"
+  ],
+  "drive_file_id": "1GPgljS0abG9sdblFkRg2YDYWSzMq-IJz",
+  "inference": {
+    "model_definition": "models_reproduce_paper.main_counting_network",
+    "resize_to_multiple": 16,
+    "window_size": 384,
+    "window_stride": 128,
+    "clip_resize": 224,
+    "density_scale": 60,
+    "overlap_merge": "official recursive pairwise averaging",
+    "count_rounding": "none",
+    "antialias": false
+  },
+  "weights_sha256": "4b629e682cf9c65a3511f1ba865ac5c5d802fa19f923658f586b722206c935da",
+  "timing_scope": "Sliding-window loop including per-window resize/normalization and model forward"
+}

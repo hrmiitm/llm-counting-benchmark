@@ -1,0 +1,402 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-10-06T05:09:06.277623+00:00",
+  "model": "ultralytics/yolov8s-worldv2",
+  "model_temp": null,
+  "model_type": "deep learning",
+  "configuration": {
+    "model": "ultralytics/yolov8s-worldv2",
+    "architecture": "YOLOv8 CNN detector with CLIP text encoder",
+    "input_mode": "unchanged metadata text label; no exemplars",
+    "checkpoint": "weights/yolov8s-worldv2.pt",
+    "inference": {
+      "imgsz": 640,
+      "conf": 0.25,
+      "iou": 0.7,
+      "max_det": 3000,
+      "half": false,
+      "augment": false,
+      "tiling": false
+    },
+    "weights_url": "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8s-worldv2.pt",
+    "weights_sha256": "9b2c17ab6124a913e9b3a5c170617920d91b0f01111a8479da69f00e2cf27792",
+    "clip_url": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
+    "clip_sha256": "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af",
+    "control_url": "https://raw.githubusercontent.com/ultralytics/ultralytics/v8.4.63/ultralytics/assets/bus.jpg",
+    "control_sha256": "c02019c4979c191eb739ddd944445ef408dad5679acab6fd520ef9d434bfbc63",
+    "timing_scope": "Ultralytics model forward; text encoding/preprocessing/postprocessing included only in latency_seconds",
+    "runtime": {
+      "device": "cpu",
+      "threads": 4,
+      "seed": 42,
+      "deterministic_algorithms": true,
+      "inputs_sha256": "914e5f82a6758182b7ec185c82252833d335a527bb749dad65c880c5e6dd6177",
+      "requirements_lock_sha256": "e69a971b6d3d6d243fc97078027703a08b1b1586d035c8a5a8ce02e684f453c2",
+      "runner_sha256": "5b3bf5b1bee3aa2b8fa40f1b48ef9946ca6b5b881b97ce8fa8520d318850c83c",
+      "common_sha256": "a634c5937f76d9bea3dd2fbfcffc83e0add5585b012838a2afdc46cefe63d2d7",
+      "detector_sha256": null,
+      "compute_hourly_usd": null
+    }
+  },
+  "config_sha256": "905af470e272360cd48938d0f82bb17f4e64c5bb3bdd10b0dc1a2e4be30f2304",
+  "prompt_version": "905af470e272360cd48938d0f82bb17f4e64c5bb3bdd10b0dc1a2e4be30f2304",
+  "prompt": "unchanged metadata text label; no exemplars",
+  "confidence_scale": "0-1",
+  "confidence_note": "P(exact count) unavailable; object scores are separate.",
+  "cost_note": "No inference API calls. Compute estimate prices per-image latency only; excludes setup/idle time and is not a hosting invoice.",
+  "timing_note": "Setup includes load/hash verification. Per-image latency includes image loading, preprocessing, prompt encoding, model forward, postprocessing and artifact saving. inference_seconds measures the forward path separately. First image can include a cold forward unless warmup is recorded.",
+  "provider_endpoint": "local-cpu",
+  "tools": [],
+  "reasoning": {
+    "enabled": false
+  },
+  "status": "success",
+  "hardware": {
+    "platform": "Linux-7.1.7-200.fc44.x86_64-x86_64-with-glibc2.43",
+    "architecture": "x86_64"
+  },
+  "runner_sha256": "5b3bf5b1bee3aa2b8fa40f1b48ef9946ca6b5b881b97ce8fa8520d318850c83c",
+  "common_sha256": "a634c5937f76d9bea3dd2fbfcffc83e0add5585b012838a2afdc46cefe63d2d7",
+  "results": [
+    {
+      "group": "1",
+      "id": "1",
+      "image": "813.jpg",
+      "label": "bottle caps",
+      "image_sha256": "555d658ea2e853014bcd15109ec1ad07103825611a5dc0a6e13f0876184eca17",
+      "run_id": "2026-10-06T05:09:06.277623+00:00",
+      "model": "ultralytics/yolov8s-worldv2",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:11.051766+00:00",
+      "model_count": 0,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.17333042300015222,
+      "inference_seconds": 0.12947910299953946,
+      "raw_response": {
+        "image_shape": [
+          384,
+          572
+        ],
+        "class_prompt": "bottle caps",
+        "detections": [],
+        "max_detection_score_before_nms": 0.052465133368968964,
+        "candidates_above_cutoff": 0,
+        "zero_detection_reason": "all_scores_below_cutoff"
+      },
+      "finished_at_utc": "2026-10-06T05:09:11.225117+00:00"
+    },
+    {
+      "group": "1",
+      "id": "2",
+      "image": "869.jpg",
+      "label": "books",
+      "image_sha256": "f923847c8289981e49909d43b24c87dbe7680e071e55cfa511afb7a4dbbd04c9",
+      "run_id": "2026-10-06T05:09:06.277623+00:00",
+      "model": "ultralytics/yolov8s-worldv2",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:11.226593+00:00",
+      "model_count": 0,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.1716509550005867,
+      "inference_seconds": 0.12467399500019383,
+      "raw_response": {
+        "image_shape": [
+          384,
+          612
+        ],
+        "class_prompt": "books",
+        "detections": [],
+        "max_detection_score_before_nms": 0.0009218279155902565,
+        "candidates_above_cutoff": 0,
+        "zero_detection_reason": "all_scores_below_cutoff"
+      },
+      "finished_at_utc": "2026-10-06T05:09:11.398261+00:00"
+    },
+    {
+      "group": "1",
+      "id": "3",
+      "image": "1084.jpg",
+      "label": "buffaloes",
+      "image_sha256": "ef129779e7e41c7425a195c65840c387cc8ad8423d3f63993914839b8c9db757",
+      "run_id": "2026-10-06T05:09:06.277623+00:00",
+      "model": "ultralytics/yolov8s-worldv2",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:11.399026+00:00",
+      "model_count": 0,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.16637937000086822,
+      "inference_seconds": 0.12333502000001317,
+      "raw_response": {
+        "image_shape": [
+          384,
+          582
+        ],
+        "class_prompt": "buffaloes",
+        "detections": [],
+        "max_detection_score_before_nms": 0.10198791325092316,
+        "candidates_above_cutoff": 0,
+        "zero_detection_reason": "all_scores_below_cutoff"
+      },
+      "finished_at_utc": "2026-10-06T05:09:11.565418+00:00"
+    },
+    {
+      "group": "1",
+      "id": "4",
+      "image": "2373.jpg",
+      "label": "bricks",
+      "image_sha256": "61d8c92d57be3344aa077285b3dcca456f60877b515b7c5f79d74581fcb5d8e7",
+      "run_id": "2026-10-06T05:09:06.277623+00:00",
+      "model": "ultralytics/yolov8s-worldv2",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:11.566201+00:00",
+      "model_count": 0,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.17944807799904083,
+      "inference_seconds": 0.13524314400092408,
+      "raw_response": {
+        "image_shape": [
+          384,
+          523
+        ],
+        "class_prompt": "bricks",
+        "detections": [],
+        "max_detection_score_before_nms": 0.002747943392023444,
+        "candidates_above_cutoff": 0,
+        "zero_detection_reason": "all_scores_below_cutoff"
+      },
+      "finished_at_utc": "2026-10-06T05:09:11.745662+00:00"
+    },
+    {
+      "group": "1",
+      "id": "5",
+      "image": "2648.jpg",
+      "label": "cement bags",
+      "image_sha256": "812b09db1137e628910b756f8abdfddaaf5b14f61d23566bec734926bed9dd01",
+      "run_id": "2026-10-06T05:09:06.277623+00:00",
+      "model": "ultralytics/yolov8s-worldv2",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:11.747157+00:00",
+      "model_count": 0,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.15788991400040686,
+      "inference_seconds": 0.11542206900048768,
+      "raw_response": {
+        "image_shape": [
+          384,
+          606
+        ],
+        "class_prompt": "cement bags",
+        "detections": [],
+        "max_detection_score_before_nms": 0.09023177623748779,
+        "candidates_above_cutoff": 0,
+        "zero_detection_reason": "all_scores_below_cutoff"
+      },
+      "finished_at_utc": "2026-10-06T05:09:11.905061+00:00"
+    },
+    {
+      "group": "1",
+      "id": "6",
+      "image": "2933.jpg",
+      "label": "stamps",
+      "image_sha256": "8d3359de5cfc91ea4a78a5fb7906518c48ed5007eab08c30f07e90a3803e466e",
+      "run_id": "2026-10-06T05:09:06.277623+00:00",
+      "model": "ultralytics/yolov8s-worldv2",
+      "model_temp": null,
+      "status": "success",
+      "started_at_utc": "2026-10-06T05:09:11.905899+00:00",
+      "model_count": 0,
+      "confidence": null,
+      "cost_usd": null,
+      "api_cost_usd": 0,
+      "latency_seconds": 0.21120225499907974,
+      "inference_seconds": 0.16832850799983134,
+      "raw_response": {
+        "image_shape": [
+          384,
+          408
+        ],
+        "class_prompt": "stamps",
+        "detections": [],
+        "max_detection_score_before_nms": 0.0007999300141818821,
+        "candidates_above_cutoff": 0,
+        "zero_detection_reason": "all_scores_below_cutoff"
+      },
+      "finished_at_utc": "2026-10-06T05:09:12.117115+00:00"
+    }
+  ],
+  "shared_code_sha256": {
+    "common.py": "a634c5937f76d9bea3dd2fbfcffc83e0add5585b012838a2afdc46cefe63d2d7",
+    "detector_setup.py": "96145c54e55462bbf9e6d7b518baf8322dcba354a3ef76914940e5ce741e4ad8",
+    "detector.py": "b913232c6c0467c290057ad7dfa052ce0f27c065066a9350fb699076e30eee9d",
+    "download_drive.py": "27c179d00d49843affd3df1ad906b3127076851dbb244e19b8d4bb290bf31866",
+    "run_all.py": "9a9c3571aea67f35861a788ba17166bc542aa7c5d39c51919f5733ebf2584350",
+    "audit.py": "45520373c9fdcc957ad8618be32da252d449d2e3a2e318716897d2fef221b36b"
+  },
+  "setup": {
+    "model": "ultralytics/yolov8s-worldv2",
+    "started_at_utc": "2026-10-06T05:08:13.846872+00:00",
+    "status": "ready",
+    "environment": {
+      "python_version_requested": "3.12.14",
+      "dependency_lock_sha256": "e69a971b6d3d6d243fc97078027703a08b1b1586d035c8a5a8ce02e684f453c2",
+      "packages": {
+        "six": "1.17.0",
+        "typing_extensions": "4.16.0",
+        "cycler": "0.12.1",
+        "regex": "2026.9.29",
+        "openai-clip": "1.0.1",
+        "filelock": "4.0.12",
+        "ultralytics-thop": "2.2.2",
+        "psutil": "7.2.2",
+        "MarkupSafe": "3.0.4",
+        "python-dateutil": "2.9.0.post0",
+        "pyparsing": "3.3.3",
+        "kiwisolver": "1.5.1",
+        "urllib3": "2.8.0",
+        "polars-runtime-32": "1.44.2",
+        "certifi": "2026.7.22",
+        "packaging": "26.3",
+        "ftfy": "6.3.1",
+        "charset-normalizer": "3.5.2",
+        "wcwidth": "0.9.2",
+        "tqdm": "4.70.1",
+        "fsspec": "2026.9.0",
+        "contourpy": "1.4.0",
+        "mpmath": "1.3.0",
+        "idna": "3.20",
+        "PyYAML": "6.0.3",
+        "requests": "2.34.2",
+        "Jinja2": "3.1.6",
+        "torchvision": "0.23.0+cpu",
+        "polars": "1.44.2",
+        "ultralytics": "8.4.63",
+        "pillow": "12.3.0",
+        "fonttools": "4.66.1",
+        "networkx": "3.7",
+        "matplotlib": "3.11.2",
+        "opencv-python": "5.0.0.93",
+        "numpy": "2.5.3",
+        "sympy": "1.14.0",
+        "scipy": "1.18.1",
+        "torch": "2.8.0+cpu",
+        "setuptools": "75.6.0"
+      }
+    },
+    "assets": [
+      {
+        "url": "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8s-worldv2.pt",
+        "file": "YOLO-World-S/weights/yolov8s-worldv2.pt",
+        "sha256": "9b2c17ab6124a913e9b3a5c170617920d91b0f01111a8479da69f00e2cf27792",
+        "size_bytes": 25923032,
+        "publisher_hash_verified": true
+      },
+      {
+        "url": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
+        "file": "YOLO-World-S/weights/clip/ViT-B-32.pt",
+        "sha256": "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af",
+        "size_bytes": 353976522,
+        "publisher_hash_verified": true
+      },
+      {
+        "url": "https://raw.githubusercontent.com/ultralytics/ultralytics/v8.4.63/ultralytics/assets/bus.jpg",
+        "file": "YOLO-World-S/weights/control-bus.jpg",
+        "sha256": "c02019c4979c191eb739ddd944445ef408dad5679acab6fd520ef9d434bfbc63",
+        "size_bytes": 137419,
+        "publisher_hash_verified": true
+      }
+    ],
+    "finished_at_utc": "2026-10-06T05:08:18.715560+00:00"
+  },
+  "dataset": {
+    "name": "six selected FSC-147 Group 1 images",
+    "source": "https://github.com/cvlab-stonybrook/LearningToCountEverything",
+    "source_commit": "00ea1888c3a7c495ae06db0bddc3b90b7db8d52f",
+    "split_file": "data/Train_Test_Val_FSC_147.json",
+    "images": {
+      "813.jpg": "val",
+      "869.jpg": "val",
+      "1084.jpg": "train",
+      "2373.jpg": "train",
+      "2648.jpg": "train",
+      "2933.jpg": "test"
+    },
+    "note": "This mixed-split pilot is not an independent held-out evaluation for FSC-147-trained checkpoints. Gold counts are excluded from predictor inputs and result rows. FamNet receives the official exemplar boxes; text-only models do not.",
+    "split_file_sha256": "e281e2d9118cd9ae6f5a2852006b6a24e7a7ea5605d9a6e0fa946dcf93308271"
+  },
+  "software": {
+    "python": "3.12.14",
+    "packages": {
+      "six": "1.17.0",
+      "typing_extensions": "4.16.0",
+      "cycler": "0.12.1",
+      "regex": "2026.9.29",
+      "openai-clip": "1.0.1",
+      "filelock": "4.0.12",
+      "ultralytics-thop": "2.2.2",
+      "psutil": "7.2.2",
+      "MarkupSafe": "3.0.4",
+      "python-dateutil": "2.9.0.post0",
+      "pyparsing": "3.3.3",
+      "kiwisolver": "1.5.1",
+      "urllib3": "2.8.0",
+      "polars-runtime-32": "1.44.2",
+      "certifi": "2026.7.22",
+      "packaging": "26.3",
+      "ftfy": "6.3.1",
+      "charset-normalizer": "3.5.2",
+      "wcwidth": "0.9.2",
+      "tqdm": "4.70.1",
+      "fsspec": "2026.9.0",
+      "contourpy": "1.4.0",
+      "mpmath": "1.3.0",
+      "idna": "3.20",
+      "PyYAML": "6.0.3",
+      "requests": "2.34.2",
+      "Jinja2": "3.1.6",
+      "torchvision": "0.23.0+cpu",
+      "polars": "1.44.2",
+      "ultralytics": "8.4.63",
+      "pillow": "12.3.0",
+      "fonttools": "4.66.1",
+      "networkx": "3.7",
+      "matplotlib": "3.11.2",
+      "opencv-python": "5.0.0.93",
+      "numpy": "2.5.3",
+      "sympy": "1.14.0",
+      "scipy": "1.18.1",
+      "torch": "2.8.0+cpu",
+      "setuptools": "75.6.0"
+    }
+  },
+  "provenance": {
+    "weights_sha256": "9b2c17ab6124a913e9b3a5c170617920d91b0f01111a8479da69f00e2cf27792",
+    "clip_sha256": "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af",
+    "warmup": "known-positive control before timed target images",
+    "control": {
+      "image_sha256": "c02019c4979c191eb739ddd944445ef408dad5679acab6fd520ef9d434bfbc63",
+      "classes": [
+        "person",
+        "bus"
+      ],
+      "count": 5,
+      "max_score": 0.9122751355171204
+    }
+  },
+  "setup_seconds": 4.769991533001303,
+  "finished_at_utc": "2026-10-06T05:09:12.117972+00:00"
+}

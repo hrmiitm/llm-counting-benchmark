@@ -9,6 +9,7 @@
 @media (max-width: 650px) { .page-nav { padding: 15px 16px; } .page-nav > div { gap: 16px; } .page-nav .page-brand { max-width: 74px; font-size: 10px; } .page-nav > div a { gap: 5px; font-size: 12px; } }
 
 .page-nav > div { margin-left: auto; }
+.page-nav > div { flex-wrap: wrap; }
 .theme-toggle { border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--text); min-height: 44px; padding: 8px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
 .theme-toggle:hover { background: var(--hover); }
 .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }

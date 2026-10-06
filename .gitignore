@@ -11,6 +11,14 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .uv/
+.venv-yolo/
+models/
+.cache/
+DL-MODELS/**/.venv/
+DL-MODELS/**/weights/
+DL-MODELS/**/upstream/
+DL-MODELS/**/.cache/
+DL-MODELS/**/logs/
 
 
 # Full downloaded dataset; keep the curated data/group*/ samples

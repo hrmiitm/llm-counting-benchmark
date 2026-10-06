@@ -1,7 +1,12 @@
 # LLM Counting Benchmark
 
-The current benchmark is **`main3.py` → `eval2/` → the two-page website**.
+The current benchmark is **`main3.py` → `eval2/` → the three-page website**.
 Start with that workflow; `main.py`, `main2.py`, and `eval/` are earlier versions.
+
+Local deep-learning comparisons live separately in [DL-MODELS](DL-MODELS/README.md):
+CountGD, CounTX, FamNet, YOLO-World-S and CountGD++. Each model has an isolated,
+locked setup and runner; configuration and predictions are saved as separate
+JSON files in `DL-MODELS/results/`. See that README for commands and input modes.
 
 ## Data sources and attribution
 
@@ -121,7 +126,7 @@ The API can charge for every image request. `.env` is ignored by Git. Results in
 
 ## Benchmark website
 
-The website has two pages with shared navigation:
+The website has three pages with shared navigation:
 
 Both pages offer light and dark modes. The initial appearance follows the system
 preference; the navigation's theme button saves an explicit choice locally and
@@ -139,6 +144,15 @@ including readable chart labels and distinct heatmap colors for each appearance.
   cost versus count deviation. The source files and limitations are linked in the story.
 - Page 2 (`compare.html`, `app.js`, `charts.js`, `styles.css`) preserves the original
   compact results viewer, with its filters, sorting, summaries, and calibration charts.
+- Page 3 (`insights.html`, `insights.js`, `insights-data.mjs`, `insights.css`) gives
+  model/architecture bullets, conclusions, and three graphs: the original nine
+  LLMs' confidence calibration; count deviation for those LLMs and five local
+  specialists; and mean stated confidence versus exact accuracy, with Brier scores.
+  It reads the five current `DL-MODELS/results/*.json` files directly, excludes
+  archived DL runs and LLM smoke tests, and requires complete results for all 14
+  models. A selector excludes the three FSC-147 training images from the counting
+  comparison; confidence graphs always use all six images for each LLM. FamNet's
+  visual-example input and the mixed dataset split are identified explicitly.
 
 The page 2 viewer reads every JSON file discovered under `eval2/`, including subfolders. Files
 may contain a result envelope with `results`, a prediction array, or a metadata
@@ -159,12 +173,26 @@ without folder listings, generate the file index before publishing:
 python3 build_manifest.py
 ```
 
-Publish both HTML pages, `app.js`, `charts.js`, `styles.css`, `story.js`, `story.css`,
+Publish all three HTML pages, `insights.js`, `insights-data.mjs`, `insights.css`,
+the five current `DL-MODELS/results/*.json` files, `DL-MODELS/dataset-info.json`,
+`DL-MODELS/README.md`, `app.js`, `charts.js`, `styles.css`, `story.js`, `story.css`,
 `navigation.css`, `theme.js`, `theme.css`, `vendor/d3.min.js`, `vendor/D3-LICENSE`,
 `data/data_source.txt`, `eval2/metadata.json`, `main3.py`, `eval2/manifest.json`,
 all its listed JSON files, and the corresponding `data/` images. Rebuild the manifest after adding or removing
 JSON files. The generator scans the folder; no filenames need to be maintained
 by hand. Relative URLs work under a repository subpath. Never publish `.env`.
+
+Page 3 checks (saved data only; no inference/API calls):
+
+```bash
+node scripts/insights-data-test.mjs
+node scripts/insights-browser-test.mjs
+```
+
+The browser check uses the same local server and Chrome debugging port as the
+existing checks. It verifies the 14 rankings against raw JSON, model selection,
+subset changes, keyboard focus, both themes, phone widths, and missing-data
+behavior. Set `INSIGHTS_URL` to test the page under a repository subpath.
 
 Checkboxes control actual counts, absolute percentage deviation, predicted/actual,
 cost, time, signed deviation (predicted minus actual), and confidence. Confidence

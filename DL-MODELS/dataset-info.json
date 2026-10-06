@@ -1,0 +1,16 @@
+{
+  "name": "six selected FSC-147 Group 1 images",
+  "source": "https://github.com/cvlab-stonybrook/LearningToCountEverything",
+  "source_commit": "00ea1888c3a7c495ae06db0bddc3b90b7db8d52f",
+  "split_file": "data/Train_Test_Val_FSC_147.json",
+  "images": {
+    "813.jpg": "val",
+    "869.jpg": "val",
+    "1084.jpg": "train",
+    "2373.jpg": "train",
+    "2648.jpg": "train",
+    "2933.jpg": "test"
+  },
+  "note": "This mixed-split pilot is not an independent held-out evaluation for FSC-147-trained checkpoints. Gold counts are excluded from predictor inputs and result rows. FamNet receives the official exemplar boxes; text-only models do not.",
+  "split_file_sha256": "e281e2d9118cd9ae6f5a2852006b6a24e7a7ea5605d9a6e0fa946dcf93308271"
+}

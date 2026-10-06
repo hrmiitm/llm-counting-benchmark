@@ -1,0 +1,27 @@
+{
+  "model": "FamNet",
+  "architecture": "ResNet50 CNN features, exemplar correlation and density regressor",
+  "input_mode": "all supplied official FSC-147 visual exemplars; no text; no adaptation",
+  "source": {
+    "repository": "cvlab-stonybrook/LearningToCountEverything",
+    "commit": "00ea1888c3a7c495ae06db0bddc3b90b7db8d52f"
+  },
+  "checkpoint": "upstream/data/pretrainedModels/FamNet_Save1.pth",
+  "inference": {
+    "max_image_dimension": 1504,
+    "feature_maps": [
+      "map3",
+      "map4"
+    ],
+    "exemplar_scales": [
+      0.9,
+      1.1
+    ],
+    "pool": "mean",
+    "test_time_adaptation": false,
+    "count_rounding": "none"
+  },
+  "exemplars": "exemplars.json",
+  "backbone_url": "https://download.pytorch.org/models/resnet50-0676ba61.pth",
+  "timing_scope": "CNN features, exemplar matching and density regressor forward"
+}

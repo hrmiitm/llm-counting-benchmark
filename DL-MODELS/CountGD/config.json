@@ -1,0 +1,27 @@
+{
+  "model": "CountGD",
+  "architecture": "GroundingDINO with Swin-B and BERT",
+  "input_mode": "unchanged metadata text label; no exemplars",
+  "source": {
+    "repository": "niki-amini-naieni/CountGD",
+    "commit": "b6f362b3f5cd20db4a171faa410dfed8f2f466d8"
+  },
+  "checkpoint": "weights/checkpoint_best_regular.pth",
+  "weights_url": "https://huggingface.co/spaces/nikigoli/countgd/resolve/6e82e59569a84ee5c6aafa35d396f2d2bee57be2/checkpoint_best_regular.pth?download=true",
+  "weights_sha256": "c1bab864b17db345b4c6e3aaabb5765bc2c0a90d0bc8defb5e664a74a50aa126",
+  "bert": {
+    "revision": "86b5e0934494bd15c9632b12f734a8a67f723594",
+    "weights_sha256": "68d45e234eb4a928074dfd868cead0219ab85354cc53d20e772753c6bb9169d3"
+  },
+  "inference": {
+    "model_config": "config/cfg_fsc147_vit_b.py",
+    "resize_short_side": 800,
+    "max_size": 1333,
+    "confidence_threshold": 0.23,
+    "adaptive_cropping": false,
+    "sam_normalization": false,
+    "use_checkpoint": false,
+    "use_transformer_ckpt": false
+  },
+  "timing_scope": "Model forward including tokenization and text/image encoders"
+}
