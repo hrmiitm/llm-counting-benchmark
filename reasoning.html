@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Explore how reasoning effort changes counting error, API cost and the usefulness of model confidence. Live analysis of saved eval4 results.">
+  <title>Does more reasoning help? / Count Compare</title>
+  <script src="theme.js?v=2"></script>
+  <link rel="stylesheet" href="theme.css?v=2">
+  <link rel="stylesheet" href="navigation.css?v=3">
+  <link rel="stylesheet" href="reasoning.css?v=1">
+  <script type="module" src="reasoning.js?v=1"></script>
+</head>
+<body>
+  <a class="skip-link" href="#reasoning">Skip to the experiment</a>
+  <nav class="page-nav" aria-label="Benchmark pages"><a class="page-brand" href="index.html">COUNT / COMPARE</a><div><a href="index.html">01 <span>The story</span></a><a href="compare.html">02 <span>Explore</span></a><a href="insights.html">03 <span>Models</span></a><a href="reasoning.html" aria-current="page">04 <span>Reasoning</span></a></div><button id="theme-toggle" class="theme-toggle" type="button">Dark mode</button></nav>
+  <main id="reasoning">
+    <header class="hero">
+      <div><p class="eyebrow">04 / THE REASONING EXPERIMENT</p><h1>More thought.<br><em>Better counts?</em></h1><p class="dek">See what low, medium and high reasoning actually buy: closer counts, a larger bill, or confidence you can use.</p><p class="hero-note">Counting deviation gives credit to close answers. Every figure below is calculated from the saved JSON.</p></div>
+      <aside class="hero-aside"><p class="eyebrow">ONE EXPERIMENT, THREE QUESTIONS</p><a href="#cost">01 <span>Is the extra cost useful?</span><span aria-hidden="true">↗</span></a><a href="#confidence">02 <span>Does confidence track error?</span><span aria-hidden="true">↗</span></a><a href="#coverage">03 <span>Which answers should I keep?</span><span aria-hidden="true">↗</span></a><div id="image-strip" class="image-strip" aria-label="The selected benchmark images"></div></aside>
+    </header>
+    <p id="load-status" role="status">Reading the saved eval4 results…</p>
+    <div id="page-content" hidden>
+      <section class="toolbar" aria-label="Explore the reasoning experiment">
+        <label class="model-control" for="model-filter">Compare models<select id="model-filter"><option value="all">All LLMs</option></select></label>
+        <fieldset class="effort-control"><legend>Reasoning levels</legend><label><input type="checkbox" name="effort" value="low" checked> <span class="effort-symbol low">●</span> Low</label><label><input type="checkbox" name="effort" value="medium" checked> <span class="effort-symbol medium">◆</span> Medium</label><label><input type="checkbox" name="effort" value="high" checked> <span class="effort-symbol high">■</span> High</label></fieldset>
+        <div class="refresh-controls"><button id="refresh" type="button">↻ Refresh data</button><label><input id="auto-refresh" type="checkbox"> Update each minute</label></div>
+      </section>
+      <div id="model-legend" class="model-legend" aria-label="Choose a model"></div>
+      <p class="scope-note" id="selection-note"></p>
+      <p class="comparison-limit" id="comparison-limit" hidden></p>
+      <div id="headlines" class="headlines" aria-label="Findings for the selected models"></div>
+      <details id="data-notices" class="notice" hidden><summary>Data coverage and comparison limits</summary><ul></ul></details>
+
+      <section id="cost" class="chapter" aria-labelledby="cost-title">
+        <div class="section-heading"><span class="section-number">01</span><div><p class="eyebrow">THE PRICE OF A CLOSER COUNT</p><h2 id="cost-title">Cost vs Counting Error</h2></div><span class="direction-pill">↖ Top-left is better</span></div>
+        <p class="section-intro">A point is one model at one reasoning level, processing the same image set. Follow its thin line from <strong>Low → Medium → High</strong>: moving right spends more; moving up reduces error.</p>
+        <div class="chart-tools"><label for="cost-scale">Cost axis <select id="cost-scale"><option value="linear">Linear · compare dollar differences</option><option value="log">Log · compare cost ratios</option></select></label><span>Model = color · reasoning = shape</span></div>
+        <figure><div id="cost-chart" class="plot"></div><p id="cost-detail" class="point-detail" aria-live="polite">Hover, tap or keyboard-focus a point for its cost and counting deviation.</p><figcaption id="cost-caption"></figcaption></figure>
+        <div class="reading"><span class="reading-label">WHAT IT MEANS</span><p id="cost-reading"></p></div>
+      </section>
+
+      <section id="confidence" class="chapter" aria-labelledby="confidence-title">
+        <div class="section-heading"><span class="section-number">02</span><div><p class="eyebrow">A CHECK ON THE MODEL’S SELF-BELIEF</p><h2 id="confidence-title">Confidence vs Counting Error</h2></div><span class="direction-pill">↗ Top-right is useful</span></div>
+        <p class="section-intro">One point is one image answer. Look for high-confidence answers near the top-right, then inspect any confident answer farther down. Low deviation means the count was close, even when it was not exact.</p>
+        <figure><div id="confidence-chart" class="plot"></div><p id="confidence-detail" class="point-detail" aria-live="polite">Select a point to inspect the image, supplied count, prediction and confidence.</p><figcaption>Confidence is the model’s stated probability of an <em>exact</em> count. Percentage deviation measures closeness. The two percentages are different quantities; this is an association plot, not formal probability calibration.</figcaption></figure>
+        <div class="reading"><span class="reading-label">WHAT IT MEANS</span><p id="confidence-reading"></p></div>
+      </section>
+
+      <section id="coverage" class="chapter" aria-labelledby="coverage-title">
+        <div class="section-heading"><span class="section-number">03</span><div><p class="eyebrow">KEEP FEWER ANSWERS. KEEP BETTER ONES?</p><h2 id="coverage-title">Error vs Coverage</h2></div><span class="direction-pill">Up is lower error</span></div>
+        <p class="section-intro">Start with the most confident answer and admit less confident answers as you move right. At each step, the curve shows mean counting deviation among the answers kept. If error increases as less confident answers enter, the curve moves downward: the highest-confidence subset counted more closely.</p>
+        <figure><div id="coverage-chart" class="plot"></div><p id="coverage-detail" class="point-detail" aria-live="polite">Select a curve point to see its confidence cutoff, accepted images and mean error.</p><figcaption>Coverage = accepted answers ÷ the full image set. Failed, missing and confidence-free answers cannot be accepted. Equal-confidence answers enter together, so tied scores can skip intermediate coverage steps. Solid, dashed and dotted lines show low, medium and high effort.</figcaption></figure>
+        <div class="cutoff-panel"><div><label for="confidence-cutoff">Try accepting confidence of at least <output id="cutoff-value" for="confidence-cutoff">90%</output></label><input id="confidence-cutoff" type="range" min="0" max="100" value="90" step="1"></div><p id="cutoff-reading" aria-live="polite"></p></div>
+        <div class="reading"><span class="reading-label">WHAT IT MEANS</span><p id="coverage-reading"></p></div>
+      </section>
+
+      <section id="answers" class="chapter" aria-labelledby="answers-title"><p class="eyebrow">ASK THE DATA</p><h2 id="answers-title">Questions worth asking.</h2><p class="section-intro">These answers follow your model and reasoning filters. Findings are observations from this small pilot, not promises about the next image.</p><div id="questions" class="questions"></div></section>
+
+      <section id="records" class="chapter" aria-labelledby="records-title"><p class="eyebrow">THE NUMBERS BEHIND THE PLOTS</p><h2 id="records-title">Every model, every level.</h2><p class="section-intro">Partial runs stay visible here. A full six-image cost comparison requires complete predictions and known charges.</p><div class="table-scroll" tabindex="0" aria-label="Reasoning-level results table"><table><caption class="sr-only">Selected model configurations and their saved results</caption><thead><tr><th scope="col">Model / reasoning</th><th scope="col">Answers</th><th scope="col">Mean error</th><th scope="col">Cost, USD</th><th scope="col">Mean confidence</th><th scope="col">Token cap</th><th scope="col">Source</th></tr></thead><tbody id="records-body"></tbody></table></div></section>
+
+      <details class="methods"><summary>Methods, limitations and source files</summary><p>Mean counting error = mean of |prediction − supplied count| ÷ supplied count × 100. Every scored image has equal weight. Zero or conflicting supplied counts cannot be used for percentage deviation. Predictions are never rounded before scoring.</p><p>Cost is the saved API-reported USD charge, including billed reasoning and known failed-call charges. Unknown charges stay unknown. Cost-chart points require the full image set and known charges; incomplete answers are shown in the table and, where possible, the confidence and coverage charts.</p><p>Thin cost connectors and low-to-high conclusions require matching recorded settings within a model, apart from effort. Missing intermediate levels break the connector. Different token caps, provider endpoints and sampling settings across models limit causal comparisons. Settings are exposed in the table and source files.</p><p>Confidence remains P(exact count). Selecting close counts from confident answers is not formal probability calibration. Each curve describes one model/effort configuration. Pooled cutoff summaries repeat the same images across configurations; they are not independent new image samples. With this small, selected pilot, useful cutoffs need further evaluation.</p><p>Predictions and confidence: <code>eval4/</code> only; smoke tests and other evaluation folders are excluded. Supplied counts: <a href="eval2/metadata.json">existing scoring metadata</a>, joined by group and image. These counts have not been independently audited here. <a href="main4.py">Read the runner</a>. No model API requests are made by this page.</p><p>Dataset: <a href="https://github.com/cvlab-stonybrook/LearningToCountEverything#dataset-download">FSC-147 / Learning To Count Everything</a>, Viresh Ranjan, Udbhav Sharma, Thu Nguyen and Minh Hoai (CVPR 2021). <a href="https://drive.google.com/file/d/1ymDYrGs9DSRicfZbSCDiOu0ikGDh5k6S/view?usp=sharing">Source images</a> · <a href="https://arxiv.org/abs/2104.08391">Paper</a> · <a href="data/data_source.txt">Recorded download URL</a>. This page covers selected Group 1 images, not the full FSC-147 benchmark. DL models are not part of these charts.</p><ul id="source-links"></ul><p id="loaded-at"></p></details>
+    </div>
+    <noscript>Enable JavaScript to calculate charts and answers from the saved JSON.</noscript>
+    <footer><span>COUNT / COMPARE <span aria-hidden="true">/</span> REASONING EXPERIMENT</span><a href="insights.html">← 03 / Models & conclusions</a></footer>
+  </main>
+</body>
+</html>

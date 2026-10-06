@@ -1,0 +1,18 @@
+---
+layout: null
+---
+{
+  "files": [
+    {%- assign separator = '' -%}
+    {%- assign result_files = site.static_files | sort: 'path' -%}
+    {%- for file in result_files -%}
+      {%- if file.path contains '/eval4/' and file.extname == '.json' -%}
+        {%- assign relative = file.path | remove_first: '/eval4/' -%}
+        {%- unless relative contains '/' or relative == 'preflight.json' or relative == 'manifest.json' -%}
+          {{- separator -}}{{- file.path | remove_first: '/' | jsonify -}}
+          {%- assign separator = ',' -%}
+        {%- endunless -%}
+      {%- endif -%}
+    {%- endfor -%}
+  ]
+}
