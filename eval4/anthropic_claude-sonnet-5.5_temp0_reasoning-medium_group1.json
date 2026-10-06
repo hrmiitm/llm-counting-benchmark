@@ -1,0 +1,661 @@
+{
+  "run_id": "2026-10-06T18:58:30.660903+00:00",
+  "model": "anthropic/claude-sonnet-5.5",
+  "model_temp": 0,
+  "prompt": "Count the {label} in this image. Report confidence between 0 and 1 as the probability your count is exactly correct, considering alternative counts. Use 0.95 for 95% confidence. Low confidence is acceptable.",
+  "max_tokens": 32768,
+  "request_timeout_seconds": 600,
+  "provider_endpoint": "azure/global",
+  "allow_fallbacks": false,
+  "tools": [],
+  "tool_choice": "none",
+  "reasoning": {
+    "enabled": true,
+    "effort": "medium",
+    "exclude": true
+  },
+  "confidence_scale": "0-1",
+  "results": [
+    {
+      "group": "1",
+      "id": "1",
+      "image": "813.jpg",
+      "label": "bottle caps",
+      "model": "anthropic/claude-sonnet-5.5",
+      "model_temp": 0,
+      "run_id": "2026-10-06T18:58:30.660903+00:00",
+      "reasoning_effort": "medium",
+      "provider_endpoint": "azure/global",
+      "started_at_utc": "2026-10-06T19:31:53.125326+00:00",
+      "model_count": 300,
+      "confidence": 0.02,
+      "cost_usd": 0.00147,
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 650,
+        "total_tokens": 667,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.00147,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.00147,
+          "upstream_inference_prompt_cost": 0.0013,
+          "upstream_inference_completions_cost": 0.00017
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791315113-DzwPGwSrOTJ1KUxd15sA",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\":300,\"confidence\":0.02}",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "end_turn"
+          }
+        ],
+        "created": 1791315113,
+        "model": "anthropic/claude-sonnet-5.5",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 17,
+          "prompt_tokens": 650,
+          "total_tokens": 667,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.00147,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.00147,
+            "upstream_inference_prompt_cost": 0.0013,
+            "upstream_inference_completions_cost": 0.00017
+          }
+        },
+        "provider": "Azure"
+      },
+      "generation_id": "gen-1791315113-DzwPGwSrOTJ1KUxd15sA",
+      "response_provider": "Azure",
+      "latency_seconds": 2.7679360330002964,
+      "finished_at_utc": "2026-10-06T19:31:55.893283+00:00"
+    },
+    {
+      "group": "1",
+      "id": "2",
+      "image": "869.jpg",
+      "label": "books",
+      "model": "anthropic/claude-sonnet-5.5",
+      "model_temp": 0,
+      "run_id": "2026-10-06T18:58:30.660903+00:00",
+      "reasoning_effort": "medium",
+      "provider_endpoint": "azure/global",
+      "started_at_utc": "2026-10-06T19:31:57.893864+00:00",
+      "model_count": 300,
+      "confidence": 0.01,
+      "cost_usd": 0.00149,
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 660,
+        "total_tokens": 677,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.00149,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.00149,
+          "upstream_inference_prompt_cost": 0.00132,
+          "upstream_inference_completions_cost": 0.00017
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791315118-mqgs5skOnsTZCIr4jfgQ",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\":300,\"confidence\":0.01}",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "end_turn"
+          }
+        ],
+        "created": 1791315118,
+        "model": "anthropic/claude-sonnet-5.5",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 17,
+          "prompt_tokens": 660,
+          "total_tokens": 677,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.00149,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.00149,
+            "upstream_inference_prompt_cost": 0.00132,
+            "upstream_inference_completions_cost": 0.00017
+          }
+        },
+        "provider": "Azure"
+      },
+      "generation_id": "gen-1791315118-mqgs5skOnsTZCIr4jfgQ",
+      "response_provider": "Azure",
+      "latency_seconds": 2.856595286000811,
+      "finished_at_utc": "2026-10-06T19:32:00.750497+00:00"
+    },
+    {
+      "group": "1",
+      "id": "3",
+      "image": "1084.jpg",
+      "label": "buffaloes",
+      "model": "anthropic/claude-sonnet-5.5",
+      "model_temp": 0,
+      "run_id": "2026-10-06T18:58:30.660903+00:00",
+      "reasoning_effort": "medium",
+      "provider_endpoint": "azure/global",
+      "started_at_utc": "2026-10-06T19:32:02.751326+00:00",
+      "model_count": 250,
+      "confidence": 0.01,
+      "cost_usd": 0.00147,
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 650,
+        "total_tokens": 667,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.00147,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.00147,
+          "upstream_inference_prompt_cost": 0.0013,
+          "upstream_inference_completions_cost": 0.00017
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791315123-k0uUd38qEX743DSDZw5u",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\":250,\"confidence\":0.01}",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "end_turn"
+          }
+        ],
+        "created": 1791315123,
+        "model": "anthropic/claude-sonnet-5.5",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 17,
+          "prompt_tokens": 650,
+          "total_tokens": 667,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.00147,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.00147,
+            "upstream_inference_prompt_cost": 0.0013,
+            "upstream_inference_completions_cost": 0.00017
+          }
+        },
+        "provider": "Azure"
+      },
+      "generation_id": "gen-1791315123-k0uUd38qEX743DSDZw5u",
+      "response_provider": "Azure",
+      "latency_seconds": 2.505211583000346,
+      "finished_at_utc": "2026-10-06T19:32:05.256554+00:00"
+    },
+    {
+      "group": "1",
+      "id": "4",
+      "image": "2373.jpg",
+      "label": "bricks",
+      "model": "anthropic/claude-sonnet-5.5",
+      "model_temp": 0,
+      "run_id": "2026-10-06T18:58:30.660903+00:00",
+      "reasoning_effort": "medium",
+      "provider_endpoint": "azure/global",
+      "started_at_utc": "2026-10-06T19:32:07.257527+00:00",
+      "model_count": 260,
+      "confidence": 0.02,
+      "cost_usd": 0.00141,
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 620,
+        "total_tokens": 637,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.00141,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.00141,
+          "upstream_inference_prompt_cost": 0.00124,
+          "upstream_inference_completions_cost": 0.00017
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791315127-GC4SJGcYb8fJUcbWwUL5",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\":260,\"confidence\":0.02}",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "end_turn"
+          }
+        ],
+        "created": 1791315127,
+        "model": "anthropic/claude-sonnet-5.5",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 17,
+          "prompt_tokens": 620,
+          "total_tokens": 637,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.00141,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.00141,
+            "upstream_inference_prompt_cost": 0.00124,
+            "upstream_inference_completions_cost": 0.00017
+          }
+        },
+        "provider": "Azure"
+      },
+      "generation_id": "gen-1791315127-GC4SJGcYb8fJUcbWwUL5",
+      "response_provider": "Azure",
+      "latency_seconds": 2.101465482999629,
+      "finished_at_utc": "2026-10-06T19:32:09.359018+00:00"
+    },
+    {
+      "group": "1",
+      "id": "5",
+      "image": "2648.jpg",
+      "label": "cement bags",
+      "model": "anthropic/claude-sonnet-5.5",
+      "model_temp": 0,
+      "run_id": "2026-10-06T18:58:30.660903+00:00",
+      "reasoning_effort": "medium",
+      "provider_endpoint": "azure/global",
+      "started_at_utc": "2026-10-06T19:32:11.360096+00:00",
+      "model_count": 80,
+      "confidence": 0.02,
+      "cost_usd": 0.001496,
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 663,
+        "total_tokens": 680,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.001496,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.001496,
+          "upstream_inference_prompt_cost": 0.001326,
+          "upstream_inference_completions_cost": 0.00017
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791315131-W1KsLUTAwxM7YSfUprfF",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\":80,\"confidence\":0.02}",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null
+            },
+            "native_finish_reason": "end_turn"
+          }
+        ],
+        "created": 1791315131,
+        "model": "anthropic/claude-sonnet-5.5",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 17,
+          "prompt_tokens": 663,
+          "total_tokens": 680,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.001496,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.001496,
+            "upstream_inference_prompt_cost": 0.001326,
+            "upstream_inference_completions_cost": 0.00017
+          }
+        },
+        "provider": "Azure"
+      },
+      "generation_id": "gen-1791315131-W1KsLUTAwxM7YSfUprfF",
+      "response_provider": "Azure",
+      "latency_seconds": 2.1065808150015073,
+      "finished_at_utc": "2026-10-06T19:32:13.466692+00:00"
+    },
+    {
+      "group": "1",
+      "id": "6",
+      "image": "2933.jpg",
+      "label": "stamps",
+      "model": "anthropic/claude-sonnet-5.5",
+      "model_temp": 0,
+      "run_id": "2026-10-06T18:58:30.660903+00:00",
+      "reasoning_effort": "medium",
+      "provider_endpoint": "azure/global",
+      "started_at_utc": "2026-10-06T19:32:15.467588+00:00",
+      "model_count": 45,
+      "confidence": 0.35,
+      "cost_usd": 0.005418,
+      "usage": {
+        "completion_tokens": 429,
+        "prompt_tokens": 564,
+        "total_tokens": 993,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 411,
+          "rejected_prediction_tokens": null,
+          "text_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": null,
+          "text_tokens": null,
+          "video_tokens": 0
+        },
+        "cost": 0.005418,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.005418,
+          "upstream_inference_prompt_cost": 0.001128,
+          "upstream_inference_completions_cost": 0.00429
+        }
+      },
+      "status": "success",
+      "attempt_count": 1,
+      "raw_response": {
+        "id": "gen-1791315135-hgfeTbwjFQIx4RrkB4vO",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "content": "{\"count\":45,\"confidence\":0.35}",
+              "refusal": null,
+              "role": "assistant",
+              "annotations": null,
+              "audio": null,
+              "function_call": null,
+              "tool_calls": null,
+              "reasoning_details": [
+                {
+                  "type": "reasoning.text",
+                  "text": "I'm trying to count the stamps row by row, tallying denominations and colors across each row to get a total.\n\nRow 3 has 6, row 4 has 6, row 5 has 7, row 6 has 8, row 7 has 7. Adding it all together with rows 1 and 2, I get a total of 45 stamps.\n\n",
+                  "format": "anthropic-claude-v1",
+                  "index": 0,
+                  "signature": "CAQS/wkKEAgSGAI4AUIIdGhpbmtpbmcSDNfVUJiiejLQGjDXmhoMBS3oQ6DunCz3U+ZCIjBQ4tjEfEumr9j7vDuyWjdZWl+FEOJ2qNik6wX0n/szYrEM8cFBDpubFLl3dWxxZwMqnAmw/XM8PGdRU0m3UgYtymtrUoma6zOG+Tvomi+ZuOvs1N+Fj4wAZXZaBEcPv/PfWsMHeTCIyO5x9Foz2R5t9N4efrO+5uo+fg6cx8mZcCnPi1oZn2bVFhDv/Kr3mmMjcglGoApxQB/+TFzoqWsq4Tkxw8k6l1Lz3ZqHmOJncTYdB12MT9OMJFqOcc/WwYW5w0Da80tqdYG6J+oaHAXJ2iqgV+b6kXKQa0DKPT2KWnR8ye/VDgHn8xN/SamLoctHv8mBjLvO1dn4ToNe7dBVew+1GFoiBdCFTFuYerNGwMkemd9fKROZBCJyFLPNWWEVrcHRIwnkK82jFYn5IIL/+zg2Ef5a4uqDfKwIWfGw3fnCTM9vOagpJGCvpLHAZ7m1G5aKMOmTxBfLCLPe1+SnnoD496T1HeNVriJHWBOc/vQQsOE7RdyepP7IPoRqwp3zrxZ+ub3RVkzqa0dSGei0f9zdLOMTOFLvnoRF1hRCq6pPbZEe1Sa6LIcj+4mf64Hg2J/1peEoVFSWs/jUwe4K/9JWwRUvMj+7FrTuY1NAw3lG0A7Ne9dnG49jMnrA9m4Y0mc2zbYkvtmLmbMAvPPT1t4OTt78oiV2Ui1Ib9pKskizCFer48DE8HhDC+odAmRlY8RCK7/baCzPkJ4IALpGrLCxDAjNoaPdtnh2bL+GoZqTfCNiEKiHUTJGePcfEAEc+bpQEjAaIU6kk437lJ6lIh/RzxWrBfOLPG0VRvcn9ip8mo29JrsImmFCj74/AXVRxzFCBPUkQEJCHbgWSj9U7TEE2U8l79gq0Hu7Yz9ubZwHh1PJEz3sVNbK5E96/1L6flxzHJRMV+kanAH/HiZQJQynkLURw9qhru2J440JZgJneZr5F43szszUcLm3EREVqDLwQecVOEypLwbQ4FkJHv4W0kc1m9uWSauzS+QXH/hX2T3CFoBrd9DINM97WYXD44zAx2mOpub6/NUmnjr7kRO4LiGnLyuBBlWzgyBOOo8BAr2L6M82d+EJKqWllWve5HEhpMVrbWPq0YAIPDpQu519IgvzX9YQ8NvcY2lfcBfBXwyjxVpV13K6jFe6QG2tYX3ngWAXxjGCWL1Jmk8KKODVhjY9GikfY6ApxYN28+SB6nMe3Sedgndbzq6fiOWXCw8+mcYhvDc41rh/R5P0EH6TaZXV9reQvFd4cBeVgMUfEOz6wKdHVQNTQlS8Fza/RLBfpHfBZ+2iJ5YyklzqOfgAUm4JbBGR01S77zcFc8t2T0TByyCx4HiRxZJCTVnF4j8pAdJHO0UTt2bNnre58jCd3+C//nWb7RdgX/ttvXMZkIk8ojbQ6G4WRIzXk/pfKmaS32BkwYDnd8PEOpl3Z/or0mBHQFSZk9xymFLIG3n3AlcW1HnDSkfFmuLFs6nGwEFsAQGiR0qJVeQ6A/WpMvIkCUt6pfYTfWAOscR/hJhqGjWYu/dwl+ElwLoBvy3OWw4i1HH3quZ6nfr4YGjD2IJE+4W0AqZHuPkUDslNLpDVTkZwbdMCfOLPhdQrxtY1CdgTDSpOb9jXchG4TCKpKE0IDMxq1A0rUKKuEBisGAE=.eyJlbmRwb2ludF9zbHVnIjoiYW50aHJvcGljL2NsYXVkZS1zb25uZXQtNS41LTIwMjYwOTI4fGF6dXJlL2dsb2JhbCJ9"
+                }
+              ]
+            },
+            "native_finish_reason": "end_turn"
+          }
+        ],
+        "created": 1791315135,
+        "model": "anthropic/claude-sonnet-5.5",
+        "object": "chat.completion",
+        "metadata": null,
+        "moderation": null,
+        "service_tier": "default",
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 429,
+          "prompt_tokens": 564,
+          "total_tokens": 993,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": 0,
+            "reasoning_tokens": 411,
+            "rejected_prediction_tokens": null,
+            "text_tokens": null,
+            "image_tokens": 0
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": 0,
+            "cache_write_tokens": 0,
+            "cached_tokens": 0,
+            "image_tokens": null,
+            "text_tokens": null,
+            "video_tokens": 0
+          },
+          "cost": 0.005418,
+          "is_byok": false,
+          "cost_details": {
+            "upstream_inference_cost": 0.005418,
+            "upstream_inference_prompt_cost": 0.001128,
+            "upstream_inference_completions_cost": 0.00429
+          }
+        },
+        "provider": "Azure"
+      },
+      "generation_id": "gen-1791315135-hgfeTbwjFQIx4RrkB4vO",
+      "response_provider": "Azure",
+      "latency_seconds": 6.5821929800004,
+      "finished_at_utc": "2026-10-06T19:32:22.049804+00:00"
+    }
+  ],
+  "known_cost_usd": 0.012754,
+  "calls_with_unknown_cost": 0
+}

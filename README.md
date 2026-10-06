@@ -104,6 +104,88 @@ not guarantee that the other images fit the token budget or succeed.
 
 Counts labeled objects in the images in `data/group1` and `data/group2` using vision models through an OpenRouter-compatible API.
 
+## Reasoning-effort experiment (`main4.py`)
+
+`main4.py` copies the `main3.py` workflow into a separate `eval4/` experiment.
+The experiment includes only Gemini 3.8 Flash, Gemini 3.1 Flash Lite, GPT-5.6 Luna,
+GPT-5.6 Sol, Claude Haiku 4.5, and Claude Sonnet 5.5, each at low, medium,
+and high. Both Geminis are now commented out in `MODELS`: all six images
+succeeded at all three efforts, and their original `eval4/` results are retained.
+The active selection is Luna, Sol, Haiku, and Sonnet. The prompt, image, JSON
+schema, shared 32,768-token cap, temperature settings,
+tools settings, provider pins, and no-retry behavior stay identical across
+efforts within each model. Only `reasoning.effort` changes in the request.
+Provider pins remain Google AI Studio for Gemini, OpenAI for GPT,
+Anthropic for Haiku, and Azure Global for Sonnet.
+
+Before any paid requests, it queries the model catalog and each selected
+model's [endpoints](https://openrouter.ai/docs/api/api-reference/endpoints/list-all-endpoints-for-a-model).
+It requires catalog [`reasoning.supported_efforts`](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens#discovering-per-model-reasoning-options) to permit
+the effort (explicit `null` means all gateway efforts; omission is unverified),
+and the exact pinned endpoint must advertise `reasoning_effort` plus the other
+requested parameters. Endpoint-specific effort restrictions, when supplied,
+also apply. It saves the capability evidence and explicit skip reasons in
+`eval4/preflight.json`. This validates advertised support, not internal provider
+execution; API failures are still saved without fallback or retry.
+
+On 6 October 2026, both Geminis, both GPTs, and Sonnet passed for all three
+efforts. Haiku's Anthropic endpoint lacks `reasoning_effort`, and its model
+catalog omits `supported_efforts`; all three Haiku settings are skipped rather
+than converting effort into a thinking-token budget or changing provider.
+Capabilities are checked again on every invocation.
+
+```bash
+# Capability queries only; no inference charges.
+uv run --with openai --with python-dotenv main4.py --check-only
+
+# Full experiment: six images per supported model/effort configuration.
+uv run --with openai --with python-dotenv main4.py
+
+# Optional paid first-image check for one model and effort.
+uv run --with openai --with python-dotenv main4.py --smoke-test --model openai/gpt-5.6-luna --effort medium
+
+# Offline regression checks; no network or model calls.
+uv run --with openai --with python-dotenv python -m unittest discover -s scripts -p 'test_main4.py'
+```
+
+`--model` and `--effort` are repeatable; their defaults are the active `MODELS` and
+all three efforts. Results use one `eval4/{model}_temp{0|default}_reasoning-{effort}_group1.json`
+envelope per configuration and retain the original prediction, confidence,
+usage, raw response, cost, latency, and timestamp fields. Skip/failure records
+append to `eval4/failures.jsonl`. No gold counts or scoring metrics are copied.
+Smoke tests write only the first image to `eval4/smoke-test/`, separate from
+full results. Rerunning replaces the selected configuration files; it does
+not resume. With the four active models, at most 72 paid image calls are possible
+if all configurations pass; the current Haiku skips reduce that to 54. The existing website continues
+to read `eval2/`; `eval4/` is not added to its manifest.
+
+The limited 6 October smoke check made seven paid calls on `813.jpg`: low
+for the five supported models, plus medium and high for GPT-5.6 Luna.
+Six returned valid JSON. Luna at high
+spent all 4,096 completion tokens on reasoning and returned `finish_reason: "length"`
+with no answer; the failure and charge were preserved without retrying.
+Total API-reported test cost was USD 0.04504325, with no unknown costs.
+The user subsequently started a full run and stopped during Sol's high effort.
+On 7 October, inspection found eight saved GPT failures, all with 4,096
+completion tokens consumed entirely by reasoning and `finish_reason: "length"`.
+The fix increases `MAX_TOKENS` to 32,768 for every active model/effort and the
+request timeout from 180 to 600 seconds. Truncation remains a genuine failure;
+it is never retried automatically, and the console now prints its cause.
+The larger budget addresses the observed limit; completion at every effort
+is not guaranteed, and requests can use more billed tokens.
+
+All old Luna/Sol result files, including their successful low/medium levels,
+and incomplete models' smoke results were removed from `eval4/` to prepare
+complete reruns at the new settings. The old results, costs, failure logs,
+and capability reports were copied outside the repository to
+`/tmp/llm-count-eval4-before-fix-sm2ibuk5/` before removal. No new paid calls
+were made for the fix; verification uses offline tests and capability queries.
+Sonnet had not been reached in the interrupted full run and remains enabled.
+The retained Gemini results still record the original 4,096-token cap;
+comparisons with the rerun models must disclose the different token caps.
+If you change a model's budget again, keep it fixed across all three efforts
+and rerun every compared level so effort remains the only variable within that model.
+
 ## Earlier benchmark (`main.py`)
 
 1. Create `.env` from `.env.example` and add your endpoint and API key:
