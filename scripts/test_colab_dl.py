@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import shutil
 from contextlib import nullcontext, redirect_stdout
 from types import SimpleNamespace
 import unittest
@@ -13,6 +14,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('colab_dl', ROOT / 'colab_dl_benchmark.py')
 module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+REAL_RUN_PATH = module.runpy.run_path
 
 
 class ColabTests(unittest.TestCase):
@@ -32,6 +34,19 @@ class ColabTests(unittest.TestCase):
                 images = repo / 'data/group1'; images.mkdir(parents=True)
                 rows = [dict(group='1', id=str(i), image=f'{i}.jpg', label='objects', **{'actual-count': 999}) for i in range(6)]
                 (images / 'metadata.json').write_text(json.dumps(rows)); (folder / 'setup-report.json').write_text('{"environment":{}}')
+                setup_calls = []
+                if name in ('CountGD', 'CountGD++'):
+                    shutil.copyfile(ROOT / 'DL-MODELS' / name / 'setup.py', folder / 'setup.py')
+                def setup(model_folder):
+                    setup_calls.append(model_folder)
+                    ops = model_folder / 'upstream/models/GroundingDINO/ops'
+                    ops.mkdir(parents=True); (ops / 'setup.py').write_text('# fake CUDA build for regression check\n')
+                def run_setup(path, run_name):
+                    if name in ('CountGD', 'CountGD++'):
+                        return REAL_RUN_PATH(path, run_name=run_name)
+                def execute(*args, **kwargs):
+                    if name in ('CountGD', 'CountGD++'):
+                        self.assertTrue((Path(args[-1]) / 'setup.py').is_file(), 'Setup must fetch the upstream extension before compilation')
                 def predict(state, image, item, folder, config, device):
                     self.assertEqual(set(item), {'group', 'id', 'image', 'label'}); self.assertEqual(device, 'cuda')
                     self.assertGreater(len(synchronized), len(calls)); calls.append(item['image'])
@@ -49,12 +64,14 @@ class ColabTests(unittest.TestCase):
                 stdout = io.StringIO(); original_path = list(sys.path)
                 try:
                     with patch.dict(sys.modules, {'torch': torch, 'numpy': numpy, 'common': common,
+                            'detector_setup': SimpleNamespace(setup=setup),
                             'MultiScaleDeformableAttention': SimpleNamespace(ms_deform_attn_forward=lambda: None)}), \
-                        patch.object(module.runpy, 'run_path'), patch.object(module, 'run'), \
+                        patch.object(module.runpy, 'run_path', side_effect=run_setup), patch.object(module, 'run', side_effect=execute), \
                         patch.object(module.importlib.util, 'spec_from_file_location', return_value=SimpleNamespace(loader=loader)), \
                         patch.object(module.importlib.util, 'module_from_spec', return_value=runner), redirect_stdout(stdout):
                         module.worker(name, repo, 2)
                 finally: sys.path[:] = original_path
+                if name in ('CountGD', 'CountGD++'): self.assertEqual(setup_calls, [folder])
                 self.assertEqual(len(calls), 8); self.assertEqual(len(synchronized), 16)
                 result = json.loads(stdout.getvalue().split(module.RESULT_MARKER)[1])
                 self.assertEqual(result['gpu'], 'Mock GPU'); self.assertEqual(len(result['result']['images']), 6)

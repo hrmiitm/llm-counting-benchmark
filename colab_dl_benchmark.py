@@ -116,10 +116,14 @@ def worker(name, repo, warmups):
         "dependency_lock_sha256": common.digest(folder / "requirements.cuda.lock"),
         "packages": common.packages(),
     }
-    runpy.run_path(str(folder / "setup.py"), run_name="__colab_setup__")
+    # GD/GD++ execute setup only inside their __main__ guards.
+    runpy.run_path(str(folder / "setup.py"), run_name="__main__")
     if name in ("CountGD", "CountGD++"):
+        extension = folder / "upstream/models/GroundingDINO/ops"
+        if not (extension / "setup.py").is_file():
+            raise RuntimeError(f"Upstream CUDA extension is missing after {name} setup: {extension}")
         run("uv", "pip", "install", "--python", sys.executable, "--no-deps", "--no-build-isolation",
-            folder / "upstream/models/GroundingDINO/ops")
+            extension)
         import MultiScaleDeformableAttention
         assert hasattr(MultiScaleDeformableAttention, "ms_deform_attn_forward")
     report = json.loads((folder / "setup-report.json").read_text())
