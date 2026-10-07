@@ -14,9 +14,11 @@ import os
 from pathlib import Path
 import random
 import runpy
+import shlex
 import shutil
 import subprocess
 import sys
+import sysconfig
 import tarfile
 from urllib.request import urlretrieve
 
@@ -98,6 +100,21 @@ def install_model(folder, uv, env):
     return python
 
 
+def cuda_header_environment(site_packages=None):
+    """Expose the CUDA development headers already installed with GPU PyTorch."""
+    root = Path(site_packages or sysconfig.get_path("purelib")) / "nvidia"
+    includes = sorted(root.glob("*/include"))
+    required = ("cusparse.h", "cublas_v2.h", "cusolverDn.h")
+    missing = [header for header in required if not any((path / header).is_file() for path in includes)]
+    if missing:
+        raise RuntimeError(f"Missing NVIDIA wheel headers: {', '.join(missing)}. Reinstall this model's CUDA dependencies.")
+    cpath = os.pathsep.join([*(str(path) for path in includes), *([os.environ["CPATH"]] if os.environ.get("CPATH") else [])])
+    flags = shlex.join([f"-I{path}" for path in includes])
+    if os.environ.get("NVCC_PREPEND_FLAGS"):
+        flags += " " + os.environ["NVCC_PREPEND_FLAGS"]
+    return {"CPATH": cpath, "NVCC_PREPEND_FLAGS": flags}
+
+
 def worker(name, repo, warmups):
     """One process per model avoids conflicting timm/OpenCLIP/module versions."""
     sys.path.insert(0, str(repo / "DL-MODELS"))
@@ -118,12 +135,14 @@ def worker(name, repo, warmups):
     }
     # GD/GD++ execute setup only inside their __main__ guards.
     runpy.run_path(str(folder / "setup.py"), run_name="__main__")
+    header_env = {}
     if name in ("CountGD", "CountGD++"):
         extension = folder / "upstream/models/GroundingDINO/ops"
         if not (extension / "setup.py").is_file():
             raise RuntimeError(f"Upstream CUDA extension is missing after {name} setup: {extension}")
+        header_env = cuda_header_environment()
         run("uv", "pip", "install", "--python", sys.executable, "--no-deps", "--no-build-isolation",
-            extension)
+            extension, env={**os.environ, **header_env})
         import MultiScaleDeformableAttention
         assert hasattr(MultiScaleDeformableAttention, "ms_deform_attn_forward")
     report = json.loads((folder / "setup-report.json").read_text())
@@ -132,6 +151,8 @@ def worker(name, repo, warmups):
     report["gpu"] = torch.cuda.get_device_name()
     report["repository_revision"] = REVISION
     report["warmup_iterations"] = warmups
+    if header_env:
+        report["cuda_build_header_environment"] = header_env
     report["implementation_note"] = "Colab CUDA; original predictor and inference settings; CUDA variant dependency lock."
     common.write_json(folder / "setup-report.json", report)
     common.environment(folder)

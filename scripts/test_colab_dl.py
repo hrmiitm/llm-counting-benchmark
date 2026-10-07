@@ -2,6 +2,8 @@
 import importlib.util
 import io
 import json
+import os
+import shlex
 from pathlib import Path
 import sys
 import tempfile
@@ -18,6 +20,21 @@ REAL_RUN_PATH = module.runpy.run_path
 
 
 class ColabTests(unittest.TestCase):
+    def test_cuda_library_headers_reach_both_compilers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for package, header in [('cusparse', 'cusparse.h'), ('cublas', 'cublas_v2.h'), ('cusolver', 'cusolverDn.h')]:
+                path = root / 'nvidia' / package / 'include'; path.mkdir(parents=True); (path / header).touch()
+            with patch.dict(os.environ, {'CPATH': '/existing/include', 'NVCC_PREPEND_FLAGS': '-lineinfo'}):
+                env = module.cuda_header_environment(root)
+            for package in ('cusparse', 'cublas', 'cusolver'):
+                include = str(root / 'nvidia' / package / 'include')
+                self.assertIn(include, env['CPATH'].split(os.pathsep))
+                self.assertIn('-I' + include, shlex.split(env['NVCC_PREPEND_FLAGS']))
+            self.assertIn('/existing/include', env['CPATH']); self.assertIn('-lineinfo', env['NVCC_PREPEND_FLAGS'])
+            (root / 'nvidia/cusparse/include/cusparse.h').unlink()
+            with self.assertRaisesRegex(RuntimeError, 'cusparse.h'): module.cuda_header_environment(root)
+
     def test_only_selected_models_and_cuda_variants(self):
         self.assertEqual(set(module.MODELS), {'CountGD', 'CountGD++', 'CounTX', 'YOLO-World-S'})
         for name in module.MODELS:
@@ -47,6 +64,8 @@ class ColabTests(unittest.TestCase):
                 def execute(*args, **kwargs):
                     if name in ('CountGD', 'CountGD++'):
                         self.assertTrue((Path(args[-1]) / 'setup.py').is_file(), 'Setup must fetch the upstream extension before compilation')
+                        self.assertEqual(kwargs['env']['CPATH'], 'mock-CUDA-headers')
+                        self.assertIn('NVCC_PREPEND_FLAGS', kwargs['env'])
                 def predict(state, image, item, folder, config, device):
                     self.assertEqual(set(item), {'group', 'id', 'image', 'label'}); self.assertEqual(device, 'cuda')
                     self.assertGreater(len(synchronized), len(calls)); calls.append(item['image'])
@@ -67,6 +86,7 @@ class ColabTests(unittest.TestCase):
                             'detector_setup': SimpleNamespace(setup=setup),
                             'MultiScaleDeformableAttention': SimpleNamespace(ms_deform_attn_forward=lambda: None)}), \
                         patch.object(module.runpy, 'run_path', side_effect=run_setup), patch.object(module, 'run', side_effect=execute), \
+                        patch.object(module, 'cuda_header_environment', return_value={'CPATH': 'mock-CUDA-headers', 'NVCC_PREPEND_FLAGS': '-Imock-CUDA-headers'}), \
                         patch.object(module.importlib.util, 'spec_from_file_location', return_value=SimpleNamespace(loader=loader)), \
                         patch.object(module.importlib.util, 'module_from_spec', return_value=runner), redirect_stdout(stdout):
                         module.worker(name, repo, 2)
