@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import { prepareData, coverageCurve, acceptance, reasoningPairs, EFFORTS } from '../reasoning-data.mjs';
+import { prepareData, coverageCurve, acceptance, reasoningPairs, confidenceSummary, EFFORTS } from '../reasoning-data.mjs';
 
 const root = new URL('../', import.meta.url);
 const metadata = JSON.parse(await readFile(new URL('eval2/metadata.json', root)));
@@ -15,6 +15,12 @@ for (const config of data.configs) {
   const truth = new Map(metadata.map(r => [`${r.group}|${r.image}`, r['actual-count']]));
   const deviations = valid.map(r => Math.abs(r.model_count - truth.get(`${r.group}|${r.image}`)) / truth.get(`${r.group}|${r.image}`) * 100);
   assert.equal(config.deviation, deviations.reduce((n, x) => n + x, 0) / deviations.length);
+  const summary = confidenceSummary(config);
+  if (config.complete && valid.every(r => typeof r.confidence === 'number')) {
+    assert.equal(summary.imageCount, metadata.length);
+    assert.equal(summary.confidence, valid.reduce((n, r) => n + r.confidence, 0) / valid.length);
+    assert.equal(summary.deviation, config.deviation);
+  }
   const curve = coverageCurve(config);
   assert.equal(curve.at(-1).accepted, valid.filter(r => typeof r.confidence === 'number').length);
   for (const point of curve) {
@@ -38,17 +44,25 @@ const fixture = { model: 'example/model', run_id: '2026-10-01T00:00:00Z', prompt
 const single = doc => [{ path: 'eval4/example_model.json', data: doc }];
 let config = prepareData(single(fixture), fixtureMetadata).configs[0];
 assert.equal(config.rows[0].deviation, 2, 'Close answers receive a small numerical deviation');
+assert.equal(confidenceSummary(config).confidence, (.9 + .9 + .1) / 3);
+assert.equal(confidenceSummary(config).deviation, (2 + 10 + 40) / 3);
+assert.equal(confidenceSummary(config).imageCount, 3);
 assert.deepEqual(coverageCurve(config).map(p => p.accepted), [2, 3], 'Equal confidence enters together');
 assert.equal(acceptance([config], .95).deviation, null, 'No accepted answers has no mean error');
 const failed = structuredClone(fixture);
 failed.results[2] = { ...failed.results[2], status: 'failed', model_count: null, confidence: null, cost_usd: null };
 config = prepareData(single(failed), fixtureMetadata).configs[0];
 assert.equal(config.complete, false); assert.equal(config.costEligible, false); assert.equal(config.totalCost, null);
+assert.equal(confidenceSummary(config), null, 'Partial image sets must not become full-run mean points');
 assert.equal(config.knownCost, .02); assert.equal(config.unknownCosts, 1);
 assert.equal(coverageCurve(config).at(-1).coverage, 2 / 3 * 100, 'Failures reduce maximum coverage');
 const unknown = structuredClone(fixture); unknown.results[0].cost_usd = null;
 config = prepareData(single(unknown), fixtureMetadata).configs[0];
 assert.equal(config.complete, true); assert.equal(config.costEligible, false); assert.equal(config.unknownCosts, 1);
+assert.ok(confidenceSummary(config), 'Unknown cost does not invalidate a full confidence/error summary');
+const missingConfidence = structuredClone(fixture); missingConfidence.results[0].confidence = null;
+assert.equal(confidenceSummary(prepareData(single(missingConfidence), fixtureMetadata).configs[0]), null,
+  'Missing confidence cannot be averaged over a different cohort from counting error');
 const smoke = { path: 'eval4/smoke-test/newer.json', data: { ...fixture, run_id: '2099-01-01T00:00:00Z' } };
 assert.equal(prepareData([...single(fixture), smoke], fixtureMetadata).configs[0].data.run_id, fixture.run_id);
 const levels = EFFORTS.map(effort => ({ path: `eval4/${effort}.json`, data: { ...structuredClone(fixture), reasoning: { ...fixture.reasoning, effort } } }));

@@ -1,5 +1,5 @@
-import { EFFORTS, finite, mean, isResultPath, nameOf, prepareData, confidenceRows,
-  coverageCurve, acceptance, reasoningPairs } from './reasoning-data.mjs';
+import { EFFORTS, finite, isResultPath, nameOf, prepareData, confidenceSummary,
+  coverageCurve, acceptance, reasoningPairs } from './reasoning-data.mjs?v=2';
 
 const $ = selector => document.querySelector(selector);
 const pct = (n, digits = 2) => finite(n) ? `${n.toFixed(digits)}%` : 'Unavailable';
@@ -38,6 +38,12 @@ function syncControls() {
 }
 const selected = () => data.configs.filter(c => (state.model === 'all' || c.model === state.model) && state.efforts.includes(c.effort));
 const colorOf = model => colors.get(model) ?? 'var(--series-1)';
+function revealSection(section, behavior) {
+  const element = document.getElementById(section);
+  if (!element) return;
+  if (element.tagName === 'DETAILS') { element.open = true; renderPlots(); }
+  element.scrollIntoView(behavior ? { behavior } : undefined);
+}
 
 async function fetchJSON(path) {
   const response = await fetch(path, { cache: 'no-store', signal: AbortSignal.timeout(20000) });
@@ -88,12 +94,11 @@ async function load() {
     const sourcesList = $('#source-links'); sourcesList.replaceChildren();
     lastSources.forEach(source => { const li = node('li'); li.append(node('a', source.path, { href: source.path })); sourcesList.append(li); });
     $('#loaded-at').textContent = `Last read ${new Date().toLocaleString()}. Published JSON is fetched again on refresh; no benchmark values are embedded in this page.`;
-    const stats = data.configs.flatMap(c => c.rows);
-    $('#load-status').textContent = `${data.models.length} LLMs · ${data.configs.length} reasoning configurations · ${data.images.length} selected images · ${stats.filter(r => r.success).length} successful answers. Data source: eval4.`;
+    $('#load-status').textContent = `${data.models.length} models · ${data.configs.length} reasoning settings · ${data.images.length} images · predictions from eval4.`;
     $('#load-status').classList.remove('error'); $('#page-content').hidden = false;
     syncControls(); render();
     const section = location.hash.split('?')[0].slice(1);
-    if (initial && ['cost', 'confidence', 'coverage', 'answers', 'records'].includes(section)) document.getElementById(section).scrollIntoView({ behavior: 'instant' });
+    if (initial && ['cost', 'confidence', 'coverage', 'answers', 'records'].includes(section)) revealSection(section, 'instant');
   } catch (error) {
     $('#page-content').hidden = true; $('#load-status').classList.add('error');
     $('#load-status').textContent = `Charts unavailable: ${error.message} No conclusions are displayed from stale or missing data.`;
@@ -138,11 +143,11 @@ function plot(target, configs, kind) {
   const container = $(target); container.replaceChildren();
   let points;
   if (kind === 'cost') points = configs.filter(c => c.costEligible && (state.scale !== 'log' || c.totalCost > 0));
-  if (kind === 'confidence') points = configs.flatMap(confidenceRows);
+  if (kind === 'confidence') points = configs.map(confidenceSummary).filter(Boolean);
   if (kind === 'coverage') points = configs.flatMap(coverageCurve);
   if (!points.length) { container.append(node('p', 'No eligible points for this selection. Select another model or reasoning level; missing answers are never shown as zero error.', { class: 'empty-plot' })); return; }
   const width = Math.max(280, Math.round(container.getBoundingClientRect().width)), height = width < 500 ? 380 : 430;
-  const left = width < 500 ? 47 : 64, right = 25, top = 62, bottom = 64, pw = width - left - right, ph = height - top - bottom;
+  const left = width < 500 ? 54 : 72, right = 30, top = 62, bottom = 64, pw = width - left - right, ph = height - top - bottom;
   const maxError = Math.max(5, Math.ceil(Math.max(...points.map(p => p.deviation)) * 1.15 / 5) * 5);
   let x;
   const minCost = Math.min(...points.map(p => p.totalCost ?? Infinity)), maxCost = Math.max(...points.map(p => p.totalCost ?? 0));
@@ -151,12 +156,12 @@ function plot(target, configs, kind) {
     ? value => left + (Math.log10(value) - logMin) / (logMax - logMin) * pw
     : value => left + value / (maxCost * 1.12 || 1) * pw;
   else x = value => left + value / 100 * pw;
-  const y = value => top + value / maxError * ph; // Zero is at the TOP in all three plots.
+  const y = value => top + ph - value / maxError * ph; // Conventional Y axis: zero at bottom.
   const svg = svgNode('svg', { viewBox: `0 0 ${width} ${height}`, height, role: 'group', 'aria-label':
-    `${kind === 'cost' ? 'Cost' : kind === 'confidence' ? 'Confidence' : 'Coverage'} versus counting deviation. Zero error is at the top.` });
+    `${kind === 'cost' ? 'Cost' : kind === 'confidence' ? 'Mean confidence' : 'Coverage'} versus mean counting error. Zero error is at the bottom; error increases upward.` });
   container.append(svg);
-  svg.append(svgNode('text', { x: left, y: 23, class: 'axis-title' }, `${kind === 'confidence' ? 'Absolute' : 'Mean absolute'} count deviation (%)`));
-  svg.append(svgNode('text', { x: left, y: 43, class: 'guide' }, '↑ LOWER ERROR / BETTER'));
+  svg.append(svgNode('text', { x: left, y: 23, class: 'axis-title' }, 'Mean counting error (%)'));
+  svg.append(svgNode('text', { x: left, y: 43, class: 'guide' }, '↓ LOWER IS BETTER'));
   for (let i = 0; i <= 4; i++) {
     const value = maxError * i / 4, py = y(value);
     svg.append(svgNode('line', { x1: left, y1: py, x2: width - right, y2: py, class: 'grid' }));
@@ -171,18 +176,18 @@ function plot(target, configs, kind) {
     const label = kind === 'cost' ? `$${tick.toFixed(tick < .01 ? 4 : 3)}` : `${Math.round(tick)}%`;
     svg.append(svgNode('text', { x: px, y: height - bottom + 22, 'text-anchor': 'middle', class: 'axis-text' }, label));
   }
-  const xTitle = kind === 'cost' ? 'Cost of the same image set, USD → more expensive'
-    : kind === 'confidence' ? 'Model-reported confidence (%) →' : 'Coverage (%) → more answers kept';
+  const xTitle = kind === 'cost' ? 'Total cost for all images, USD'
+    : kind === 'confidence' ? 'Mean confidence (%)' : 'Coverage (%)';
   svg.append(svgNode('text', { x: left + pw / 2, y: height - 12, 'text-anchor': 'middle', class: 'axis-title' },
     width < 500 && kind === 'cost' ? 'Same-image cost, USD →' : xTitle));
   const dash = effort => effort === 'medium' ? '7 4' : effort === 'high' ? '2 4' : '';
-  if (kind === 'cost') {
+  if (kind === 'cost' || kind === 'confidence') {
     for (const model of new Set(points.map(p => p.model))) {
       if (new Set(data.configs.filter(c => c.model === model).map(c => c.signature)).size > 1) continue;
       for (let i = 0; i < EFFORTS.length - 1; i++) {
         const a = points.find(p => p.model === model && p.effort === EFFORTS[i]);
         const b = points.find(p => p.model === model && p.effort === EFFORTS[i + 1]);
-        if (a && b) svg.append(svgNode('path', { d: `M ${x(a.totalCost)} ${y(a.deviation)} L ${x(b.totalCost)} ${y(b.deviation)}`,
+        if (a && b) svg.append(svgNode('path', { d: `M ${x(kind === 'cost' ? a.totalCost : a.confidence * 100)} ${y(a.deviation)} L ${x(kind === 'cost' ? b.totalCost : b.confidence * 100)} ${y(b.deviation)}`,
           stroke: colorOf(model), class: 'series-line', 'data-model': model }));
       }
     }
@@ -193,20 +198,17 @@ function plot(target, configs, kind) {
         stroke: colorOf(config.model), 'stroke-dasharray': dash(config.effort), class: 'series-line',
         'data-model': config.model, 'data-effort': config.effort }));
     }
-  } else {
-    const px = x(state.cutoff);
-    svg.append(svgNode('line', { x1: px, y1: top, x2: px, y2: height - bottom,
-      stroke: 'var(--mark-outline)', 'stroke-dasharray': '4 5', 'aria-hidden': 'true' }));
   }
   for (const p of points) {
     const px = x(kind === 'cost' ? p.totalCost : kind === 'confidence' ? p.confidence * 100 : p.coverage), py = y(p.deviation);
     let detail;
     if (kind === 'cost') detail = `${p.name}, ${titleEffort(p.effort)}: ${usd(p.totalCost)} for ${p.n} images; mean deviation ${pct(p.deviation)}; ${cap(p.data.max_tokens)}-token cap.`;
-    if (kind === 'confidence') detail = `${nameOf(p.model)}, ${titleEffort(p.effort)} · ${p.image} (${p.label}): prediction ${p.count}, supplied count ${p.actual}; deviation ${pct(p.deviation)}; confidence ${pct(p.confidence * 100, 1)}.`;
+    if (kind === 'confidence') detail = `${p.name}, ${titleEffort(p.effort)}: mean confidence ${pct(p.confidence * 100, 1)}; mean error ${pct(p.deviation)} across all ${p.imageCount} images.`;
     if (kind === 'coverage') detail = `${nameOf(p.model)}, ${titleEffort(p.effort)}: keep ${p.accepted}/${p.denominator} answers (${pct(p.coverage, 1)} coverage), confidence at least ${pct(p.confidence * 100, 1)}; mean deviation ${pct(p.deviation)}. Images: ${p.images.join(', ')}.`;
-    const size = kind === 'confidence' ? 4.5 : 6;
+    const size = 7;
     const attrs = { fill: colorOf(p.model), class: `mark ${kind}-point`, tabindex: '0', role: 'button', 'aria-label': detail,
       'data-model': p.model, 'data-effort': p.effort, 'data-deviation': p.deviation,
+      'data-image-count': kind === 'confidence' ? p.imageCount : '',
       'data-x': kind === 'cost' ? p.totalCost : kind === 'confidence' ? p.confidence * 100 : p.coverage };
     let mark;
     if (p.effort === 'low') mark = svgNode('circle', { ...attrs, cx: px, cy: py, r: size });
@@ -215,29 +217,42 @@ function plot(target, configs, kind) {
     mark.append(svgNode('title', {}, detail));
     const inspect = () => {
       const box = $(`#${kind}-detail`); box.replaceChildren(document.createTextNode(detail));
-      if (kind === 'confidence') box.append(document.createTextNode(' '), node('a', 'Open image ↗', {
-        href: `data/group${encodeURIComponent(p.group)}/${encodeURIComponent(p.image)}`, target: '_blank', rel: 'noopener' }));
-      if (kind === 'cost') box.append(document.createTextNode(' '), node('a', 'Raw JSON ↗', { href: p.path, target: '_blank', rel: 'noopener' }));
+      if (kind === 'cost' || kind === 'confidence') box.append(document.createTextNode(' '), node('a', 'Raw JSON ↗', { href: p.path, target: '_blank', rel: 'noopener' }));
     };
     for (const event of ['mouseenter', 'focus', 'click']) mark.addEventListener(event, inspect);
     mark.addEventListener('keydown', event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); inspect(); } });
     svg.append(mark);
-    if (kind === 'cost' && state.model !== 'all') svg.append(svgNode('text', { x: px + 10, y: py - 9, class: 'point-label' }, titleEffort(p.effort)));
+    if (kind !== 'coverage' && state.model !== 'all') {
+      const label = titleEffort(p.effort), labelWidth = label.length * 8;
+      const fitsRight = px + 12 + labelWidth < width - 4;
+      svg.append(svgNode('text', { x: fitsRight ? px + 12 : px - 12, y: py - 12,
+        'text-anchor': fitsRight ? 'start' : 'end', class: 'point-label' }, label));
+    }
   }
+  const legend = node('div', null, { class: 'chart-model-legend', 'aria-label': 'Models in this chart' });
+  for (const model of new Set(points.map(p => p.model))) {
+    const button = node('button', null, { type: 'button', 'aria-label': `Inspect ${nameOf(model)}` });
+    const dot = node('span', null, { class: 'legend-dot', 'aria-hidden': 'true' }); dot.style.setProperty('--color', colorOf(model));
+    button.append(dot, document.createTextNode(nameOf(model)));
+    button.addEventListener('click', () => { state.model = state.model === model ? 'all' : model; syncControls(); render(); writeState(); });
+    legend.append(button);
+  }
+  container.append(legend);
 }
 
 function renderReadings(configs) {
   const eligible = configs.filter(c => c.costEligible), pairs = reasoningPairs(configs);
   const better = pairs.filter(p => p.errorReduction > 1e-9).length;
-  $('#cost-caption').textContent = `${eligible.length} comparable points for the same ${data.images.length} images. Missing predictions or unknown charges exclude a configuration from this plot. Mean error weights each image equally. ${state.scale === 'log' ? 'Log spacing represents cost ratios; zero-cost points are omitted.' : 'Linear spacing represents dollar differences.'}`;
+  $('#cost-caption').textContent = `Each point covers the same ${data.images.length} images. Incomplete results and unknown costs are excluded. ${state.scale === 'log' ? 'Log spacing compares cost ratios.' : 'Linear spacing compares dollar differences.'}`;
   $('#cost-reading').textContent = pairs.length
-    ? `${better} of ${pairs.length} comparable low-to-high model pairs reduce mean deviation at high effort. The cost of each change is visible horizontally; a move down and right pays more for a worse count. Inspect a model to separate its path.`
+    ? `${better} of ${pairs.length} models have lower mean error at High than Low. Moving down is an improvement; moving up and right means paying more for higher error.`
     : 'Select low and high for a model with complete, matching configurations to compare the extra cost with the change in counting error.';
   const accepted = acceptance(configs, state.cutoff / 100);
-  const high = configs.flatMap(confidenceRows).filter(r => r.confidence >= state.cutoff / 100);
-  $('#confidence-reading').textContent = high.length
-    ? `At confidence of at least ${state.cutoff}%, ${high.length} selected answers have mean deviation ${pct(mean(high.map(r => r.deviation)))}. The largest deviation among them is ${pct(Math.max(...high.map(r => r.deviation)))}. Confidence alone is not a numerical error bound.`
-    : `No selected valid answers reach ${state.cutoff}% confidence. Lower the cutoff or inspect another model.`;
+  const summaries = configs.map(confidenceSummary).filter(Boolean);
+  const confident = [...summaries].sort((a, b) => b.confidence - a.confidence)[0];
+  $('#confidence-reading').textContent = confident
+    ? `Highest mean confidence: ${confident.name} (${titleEffort(confident.effort)}), ${pct(confident.confidence * 100, 1)}, with ${pct(confident.deviation)} mean error. Higher confidence does not guarantee lower error.`
+    : 'A summary point needs a valid count and confidence for every image. No selected configuration has that full coverage.';
   $('#cutoff-reading').textContent = accepted.accepted
     ? `Keep ${accepted.accepted}/${accepted.denominator} possible answers (${pct(accepted.coverage, 1)} coverage). Mean deviation: ${pct(accepted.deviation)}, compared with ${pct(accepted.baseline)} across all confidence-bearing answers in this selection.`
     : configs.length ? `Keep 0/${accepted.denominator} possible answers at this cutoff. Mean error is undefined when no answers are accepted.` : 'Select a reasoning level to explore confidence-based coverage.';
@@ -257,12 +272,14 @@ function renderQuestions(configs) {
   const questions = [
     ['Which setting gives the closest counts?', best ? `${best.name} at ${best.effort} has the lowest mean deviation among complete selected configurations: ${pct(best.deviation)} over ${best.n} images. A small deviation means close counts; it is not an exact-match score.` : 'No selected configuration has complete scoring coverage. Partial means are shown in the table but are not ranked against complete runs.'],
     ['Which setting costs the least for the same images?', cheap ? `${cheap.name} at ${cheap.effort}: ${usd(cheap.totalCost)} for the full image set, with ${pct(cheap.deviation)} mean deviation. This is the saved API charge, not a current price estimate.` : 'A fair total-cost ranking requires complete answers for the full image set and known charges. None of the selected configurations meets both conditions.'],
-    ['Does high reasoning actually improve counting?', pairs.length ? pairs.map(p => `${p.name}: high ${p.errorReduction > 0 ? 'reduces' : p.errorReduction < 0 ? 'increases' : 'does not change'} mean deviation ${p.errorReduction ? `by ${Math.abs(p.errorReduction).toFixed(2)} percentage points` : ''}; cost changes from ${usd(p.low.totalCost)} to ${usd(p.high.totalCost)}.`).join(' ') + ' These are single-run observations with matching within-model settings, not a guaranteed effect.' : 'Select low and high levels with complete results and matching non-effort settings. Without those conditions, the page makes no reasoning-effect claim.'],
+    ['Does high reasoning actually improve counting?', pairs.length ? (pairs.length > 1
+      ? `${pairs.filter(p => p.errorReduction > 1e-9).length} of ${pairs.length} models improve at High compared with Low. Select one model to see its change in error and cost.`
+      : pairs.map(p => `${p.name}: High ${p.errorReduction > 0 ? 'reduces' : p.errorReduction < 0 ? 'increases' : 'does not change'} mean error ${p.errorReduction ? `by ${Math.abs(p.errorReduction).toFixed(2)} percentage points` : ''}; cost changes from ${usd(p.low.totalCost)} to ${usd(p.high.totalCost)}.`).join(' ')) + ' These are observations from this pilot.' : 'Select low and high levels with complete results and matching settings to compare reasoning effort.'],
     ['Do the most confident answers have smaller errors?', accepted.accepted ? `At your ${state.cutoff}% cutoff, accepted answers have ${pct(accepted.deviation)} mean deviation; all valid, confidence-bearing answers have ${pct(accepted.baseline)}. ${accepted.deviation < accepted.baseline ? 'Selection improves the observed average in this view.' : accepted.deviation > accepted.baseline ? 'Selection worsens the observed average in this view.' : 'The observed average is unchanged.'} Inspect individual curves before using a pooled result.` : 'No answers meet your selected cutoff, so their mean error cannot be calculated. Lower the cutoff to compare accepted and unfiltered answers.'],
     ['How much coverage do I give up?', `Your ${state.cutoff}% cutoff keeps ${accepted.accepted} of ${accepted.denominator} possible answers (${pct(accepted.coverage, 1)}). The denominator includes missing or failed answers. In the all-model view, the same images are counted again for each model/effort configuration; this is a pooled experiment summary.`],
     ['Why is a close answer treated as useful?', 'Deviation measures distance from the supplied count. For example, a prediction of 98 against a supplied count of 100 has 2% deviation. An exact-match metric would give it no credit, but these charts represent it as a close count. Each image receives equal weight.'],
-    ['Is this confidence calibration?', 'No. The saved confidence is P(exact count), while deviation measures numerical closeness. These charts explore association and selective counting error. A claim of formal probability calibration requires outcomes that match the stated probability and more evidence than this small pilot.'],
-    ['Why might a point or a model be missing?', !configs.length ? 'No reasoning configurations are selected. Enable at least one level to see its results.' : partial.length ? partial.map(c => `${c.name}, ${c.effort}: ${c.successful}/${c.n} valid answers; ${c.failed} failed, ${c.skipped} skipped, ${c.missing} missing; ${c.unknownCosts} unknown charges.`).join(' ') + ' Missing means are not zero. Only valid predictions with supplied counts and valid confidence enter the confidence plots.' : `All ${configs.length} selected configurations have complete answers and known charges. Models with no saved eval4 envelopes do not appear; smoke tests are excluded. Confidence plots omit missing or invalid confidence even when a count is saved. If a later run fails or its charge is unknown, its cost point disappears and its coverage stops short of the full set.`],
+    ['What does a confidence point represent?', 'One model at one reasoning level, averaged across all images. The horizontal position is its mean stated confidence; the vertical position is its mean absolute percentage count deviation. Both means use the same full image set. This does not establish formal probability calibration: confidence means P(exact count), while numerical error measures closeness.'],
+    ['Why might a point or a model be missing?', !configs.length ? 'No reasoning configurations are selected. Enable at least one level to see its results.' : partial.length ? partial.map(c => `${c.name}, ${c.effort}: ${c.successful}/${c.n} valid answers; ${c.failed} failed, ${c.skipped} skipped, ${c.missing} missing; ${c.unknownCosts} unknown charges.`).join(' ') + ' Partial means are not compared against complete runs. Confidence points also require valid confidence for every image.' : `All ${configs.length} selected configurations have complete answers and known charges. A confidence point also requires valid confidence for every image. Missing runs and smoke tests are excluded; partial runs remain in the detailed table.`],
     ['Did only reasoning effort change?', `The page checks recorded prompts, sampling, token caps, provider pins, tools, fallbacks and timeouts within each model. Lines and reasoning comparisons are withheld if those settings differ across efforts. Across selected models, the recorded token caps are ${[...new Set(configs.map(c => cap(c.data.max_tokens)))].join(' / ') || 'unavailable'}. Cross-model differences cannot be attributed to effort alone.`],
     ['Can I use this to choose a production model?', `Use it to identify candidates, then test your own images and error tolerance. This is a selected ${data.images.length}-image pilot, not the full FSC-147 benchmark. One answer per image and configuration gives little evidence about repeatability or generalization. The supplied counts have not been independently audited here.`],
   ];
@@ -284,24 +301,29 @@ function renderRecords(configs) {
     const error = node('td', pct(c.deviation)); if (!c.complete) error.append(node('small', `Partial: ${c.scored} scored images`)); tr.append(error);
     const cost = node('td', c.totalCost !== null ? usd(c.totalCost) : `${usd(c.knownCost)} known`);
     if (c.totalCost === null) cost.append(node('small', `${c.unknownCosts} unknown charges · incomplete comparison`)); tr.append(cost);
-    tr.append(node('td', pct(c.confidence === null ? null : c.confidence * 100, 1)), node('td', cap(c.data.max_tokens)));
+    const confidence = node('td', pct(c.confidence === null ? null : c.confidence * 100, 1));
+    const confidenceCount = c.rows.filter(r => r.confidence !== null).length;
+    if (confidenceCount < c.n) confidence.append(node('small', `${confidenceCount}/${c.n} confidence values`));
+    tr.append(confidence, node('td', cap(c.data.max_tokens)));
     const source = node('td'); source.append(node('a', 'JSON ↗', { href: c.path, 'aria-label': `Raw JSON for ${c.name} at ${c.effort}` })); tr.append(source); body.append(tr);
   }
 }
 function renderPlots() {
   if (!data || $('#page-content').hidden) return;
-  const configs = selected(); plot('#cost-chart', configs, 'cost'); plot('#confidence-chart', configs, 'confidence'); plot('#coverage-chart', configs, 'coverage');
+  const configs = selected(); plot('#cost-chart', configs, 'cost'); plot('#confidence-chart', configs, 'confidence');
+  if ($('#coverage').open) plot('#coverage-chart', configs, 'coverage');
 }
 function render() {
   $('#cost-detail').textContent = 'Hover, tap or keyboard-focus a point for its cost and counting deviation.';
-  $('#confidence-detail').textContent = 'Select a point to inspect the image, supplied count, prediction and confidence.';
+  $('#confidence-detail').textContent = 'Select a model-level point to see its mean confidence and mean error.';
   $('#coverage-detail').textContent = 'Select a curve point to see its confidence cutoff, accepted images and mean error.';
   const configs = selected(); renderLegend(); renderHeadlines(configs); renderReadings(configs); renderQuestions(configs); renderRecords(configs); renderPlots();
-  $('#selection-note').textContent = `${state.model === 'all' ? 'All loaded LLMs' : nameOf(state.model)} · ${state.efforts.map(titleEffort).join(' / ') || 'no reasoning levels selected'} · ${configs.length} configurations. Select a model in the legend to separate overlapping points.`;
+  $('#selection-note').textContent = `${state.model === 'all' ? 'All models' : nameOf(state.model)} · ${state.efforts.map(titleEffort).join(' / ') || 'no reasoning levels selected'} · ${configs.length} settings. Choose one model for a closer look.`;
   const warnings = [...notices, ...data.warnings];
   const limit = data.warnings.filter(w => w.startsWith('Token caps differ')).join(' ');
   $('#comparison-limit').textContent = limit; $('#comparison-limit').hidden = !limit;
   for (const c of configs.filter(c => !c.costEligible)) warnings.push(`${c.name}, ${c.effort}: ${c.successful}/${c.n} valid answers and ${c.unknownCosts} unknown charges. Excluded from the full-image cost plot.`);
+  for (const c of configs.filter(c => !confidenceSummary(c))) warnings.push(`${c.name}, ${c.effort}: missing count or confidence for the full image set. Excluded from the mean-confidence plot.`);
   const list = $('#data-notices ul'); list.replaceChildren(...warnings.map(w => node('li', w)));
   $('#data-notices').hidden = !warnings.length;
 }
@@ -309,8 +331,9 @@ function render() {
 readState();
 for (const anchor of document.querySelectorAll('a[href^="#"]')) anchor.addEventListener('click', event => {
   const section = anchor.getAttribute('href').slice(1);
-  if (document.getElementById(section)) { event.preventDefault(); writeState(section, true); document.getElementById(section).scrollIntoView(); }
+  if (document.getElementById(section)) { event.preventDefault(); writeState(section, true); revealSection(section); }
 });
+$('#coverage').addEventListener('toggle', renderPlots);
 $('#model-filter').addEventListener('change', event => { state.model = event.target.value; render(); writeState(); });
 for (const input of document.querySelectorAll('input[name=effort]')) input.addEventListener('change', () => {
   state.efforts = [...document.querySelectorAll('input[name=effort]:checked')].map(i => i.value); render(); writeState();

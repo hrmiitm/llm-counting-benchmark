@@ -97,6 +97,14 @@ export function confidenceRows(config) {
   return config.rows.filter(r => r.confidence !== null && r.deviation !== null);
 }
 
+export function confidenceSummary(config) {
+  const rows = confidenceRows(config);
+  // Both means must describe the SAME full image set, never mismatched subsets.
+  if (!config.complete || rows.length !== config.n) return null;
+  return { ...config, confidence: mean(rows.map(r => r.confidence)),
+    deviation: mean(rows.map(r => r.deviation)), imageCount: rows.length };
+}
+
 export function coverageCurve(config) {
   const rows = confidenceRows(config).sort((a, b) => b.confidence - a.confidence || a.key.localeCompare(b.key));
   const points = [], accepted = [];

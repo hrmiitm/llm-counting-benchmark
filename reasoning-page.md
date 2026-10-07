@@ -1,12 +1,18 @@
 # Page 4: the reasoning experiment
 
-Open `reasoning.html`. This is a standalone page; no existing page, navigation,
-script, stylesheet, prediction JSON or scoring metadata is modified.
+Open `reasoning.html`. The original three pages link to it through their
+navigation. Prediction JSON and scoring metadata are unchanged.
 
-The three charts are **Cost vs Counting Error**, **Confidence vs Counting Error**,
-and **Error vs Coverage**, with zero error at the top. Use the all-model view,
-model selector or model legend, effort checkboxes, linear/log cost axis, and
-confidence cutoff. Focus or select a point for its details. The model/effort
+The main charts are **Cost vs Mean Error** and **Mean Confidence vs Mean Error**.
+Both show one point per model/reasoning level, summarized across the full image
+set. The confidence point pairs mean confidence with mean absolute percentage
+count deviation over exactly the same images; incomplete cohorts are omitted.
+All Y axes now use zero at the bottom, increasing error upward. Bottom-left
+is best for cost/error; bottom-right combines high mean confidence with low error.
+**Error vs Coverage** and the detailed table are optional, collapsed sections.
+Use the all-model view, model selector or chart legend, effort checkboxes,
+linear/log cost axis, and optional coverage confidence cutoff. Focus or select
+a point for its details. The model/effort
 selection and cutoff are saved in the URL. Light/dark mode uses the existing theme.
 
 Predictions, confidence, costs and settings are read from top-level `eval4/`
@@ -32,7 +38,8 @@ supply the equivalent `{ "files": ["eval4/…json"] }` list at that URL.
 
 Full-image cost points require complete scored answers and known charges.
 Failed-call costs remain in known subtotals; unknown charges never become zero.
-Partial confidence/coverage curves may end below full coverage. Confidence ties
+Mean-confidence points require complete count/confidence coverage; partial
+coverage curves may end below full coverage. Confidence ties
 enter together rather than producing arbitrary intermediate steps.
 Different non-effort settings within a model prevent connectors and reasoning
 conclusions. Different model token caps remain visible as a comparison caveat.
