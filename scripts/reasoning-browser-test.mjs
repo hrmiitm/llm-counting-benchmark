@@ -1,14 +1,16 @@
 // Saved JSON and isolated Chrome only: no model requests and no result-file writes.
 import assert from 'node:assert/strict';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
-import { prepareData, acceptance, confidenceSummary, isResultPath } from '../reasoning-data.mjs';
+import { prepareData, acceptance, confidenceSummary, isResultPath, priceDLConfig } from '../reasoning-data.mjs';
 const base = process.env.REASONING_URL ?? 'http://127.0.0.1:8765/reasoning.html';
 const cdp = process.env.REASONING_CDP ?? 'http://127.0.0.1:9222';
 const root = new URL('../', import.meta.url);
 const metadata = JSON.parse(await readFile(new URL('eval2/metadata.json', root)));
 const paths = (await readdir(new URL('eval4/', root))).map(p => `eval4/${p}`).filter(isResultPath).sort();
 const sources = await Promise.all(paths.map(async path => ({ path, data: JSON.parse(await readFile(new URL(path, root))) })));
+const pricing = JSON.parse(await readFile(new URL('dl-pricing.json', root)));
 const expected = prepareData(sources, metadata);
+expected.configs = expected.configs.map(c => priceDLConfig(c, pricing.presets.find(p => p.id === 'azure').hourly_cost_usd));
 const target = await (await fetch(`${cdp}/json/new?about:blank`, { method: 'PUT' })).json();
 const socket = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
@@ -60,6 +62,14 @@ try {
   assert.equal(await evaluate(`document.querySelectorAll('.plot').length`), 3);
   assert.equal(await evaluate(`document.querySelectorAll('#records-body tr').length`), expected.configs.length);
   assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), expected.configs.filter(c => c.costEligible).length);
+  assert.equal(await evaluate(`document.querySelector('#dl-rate-source').value`), 'azure', 'A known reference rate makes the DL costs visible initially');
+  assert.equal(await evaluate(`document.querySelector('#cost-scale').value`), 'log', 'Default log spacing separates small DL costs');
+  for (const c of expected.configs.filter(c => c.isDL)) {
+    assert.equal(Number(await evaluate(`document.querySelector('.cost-point[data-model=${JSON.stringify(c.model)}]').dataset.x`)), c.totalCost);
+    assert.equal(Number(await evaluate(`document.querySelector('.dl-cost-row[data-model=${JSON.stringify(c.model)}]').dataset.deviation`)), c.deviation);
+    assert.equal(Number(await evaluate(`document.querySelector('.dl-cost-row[data-model=${JSON.stringify(c.model)}]').dataset.cost`)), c.totalCost);
+    assert.equal(await evaluate(`document.querySelector('[data-label-model=${JSON.stringify(c.model)}]').textContent`), c.name);
+  }
   assert.equal(await evaluate(`document.querySelector('#coverage').open`), false, 'Coverage is optional and closed initially');
   assert.equal(await evaluate(`document.querySelector('#records').open`), false, 'Detailed table is collapsed initially');
   const summaries = expected.configs.map(confidenceSummary).filter(Boolean);
@@ -150,6 +160,7 @@ try {
       images: metadata.map((r, i) => ({ image: r.image, predicted_count: 100.375 + i, inference_seconds: .125 + i / 10 })) })) };
   await command('Fetch.enable', { patterns: [{ urlPattern: '*reasoning-sources.json' }, { urlPattern: '*eval4/colab-dl.json' }] });
   await command('Page.navigate', { url: base }); await ready();
+  await evaluate(`document.querySelector('#dl-rate-source').value='saved';document.querySelector('#dl-rate-source').dispatchEvent(new Event('change'));document.querySelector('#cost-scale').value='linear';document.querySelector('#cost-scale').dispatchEvent(new Event('change'))`);
   const llmSources = sources.filter(s => s.data.provider !== 'Google Colab');
   const combined = prepareData([...llmSources, { path: 'eval4/colab-dl.json', data: colab }], metadata);
   const llmPoints = combined.configs.filter(c => !c.isDL && c.costEligible).length;
@@ -158,6 +169,46 @@ try {
   assert.equal(await evaluate(`document.querySelectorAll('.quality-row').length`), combined.configs.filter(c => c.complete).length);
   const llmConfidence = combined.configs.map(confidenceSummary).filter(Boolean).length;
   assert.equal(await evaluate(`document.querySelectorAll('.confidence-point').length`), llmConfidence);
+  assert.equal(await evaluate(`document.querySelector('#dl-rate-source option[value=nvidia]').disabled`), true, 'No invented NVIDIA rate');
+  // Reference T4 rates are disabled on a different measured GPU.
+  assert.equal(await evaluate(`document.querySelector('#dl-rate-source option[value=aws]').disabled`), true);
+  colab.gpu = 'Tesla T4';
+  await evaluate(`document.querySelector('#refresh').click()`); await ready();
+  const originalFile = await readFile(new URL('eval4/colab-dl.json', root), 'utf8');
+  const beforeLLM = await evaluate(`[...document.querySelectorAll('.cost-point')].filter(p=>p.dataset.effort!=='none').map(p=>[p.dataset.model,p.dataset.effort,p.dataset.x,p.dataset.deviation])`);
+  const beforeQuality = await evaluate(`[...document.querySelectorAll('.quality-row')].map(r=>[r.dataset.model,r.dataset.deviation])`);
+  for (const preset of pricing.presets.filter(p => p.hourly_cost_usd !== null)) {
+    await evaluate(`document.querySelector('#dl-rate-source').value=${JSON.stringify(preset.id)};document.querySelector('#dl-rate-source').dispatchEvent(new Event('change'))`);
+    assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), llmPoints + 4);
+    for (const c of combined.configs.filter(c => c.isDL)) {
+      const priced = priceDLConfig(c, preset.hourly_cost_usd);
+      assert.equal(Number(await evaluate(`[...document.querySelectorAll('.cost-point')].find(p=>p.dataset.model===${JSON.stringify(c.model)}).dataset.x`)), priced.totalCost);
+      assert.equal(Number(await evaluate(`[...document.querySelectorAll('#records-body tr')].find(p=>p.dataset.model===${JSON.stringify(c.model)}).dataset.cost`)), priced.totalCost);
+    }
+    assert.deepEqual(await evaluate(`[...document.querySelectorAll('.cost-point')].filter(p=>p.dataset.effort!=='none').map(p=>[p.dataset.model,p.dataset.effort,p.dataset.x,p.dataset.deviation])`), beforeLLM);
+    assert.deepEqual(await evaluate(`[...document.querySelectorAll('.quality-row')].map(r=>[r.dataset.model,r.dataset.deviation])`), beforeQuality);
+  }
+  await evaluate(`document.querySelector('#dl-rate-source').value='custom';document.querySelector('#dl-rate-source').dispatchEvent(new Event('change'));document.querySelector('#dl-custom-rate').value='1.5';document.querySelector('#dl-custom-rate').dispatchEvent(new Event('input'))`);
+  const dlSeconds = combined.configs.find(c => c.model === 'CountGD').totalInferenceSeconds;
+  assert.equal(Number(await evaluate(`document.querySelector('.cost-point[data-model="CountGD"]').dataset.x`)), dlSeconds / 3600 * 1.5);
+  assert.ok((await evaluate(`document.querySelector('#headlines').textContent`)).includes((dlSeconds / 3600 * 1.5).toFixed(6)));
+  const pricingURL = await evaluate(`location.href`);
+  await command('Page.navigate', { url: pricingURL }); await ready();
+  assert.equal(await evaluate(`document.querySelector('#dl-rate-source').value`), 'custom');
+  assert.equal(await evaluate(`document.querySelector('#dl-custom-rate').value`), '1.5');
+  await evaluate(`document.querySelector('#refresh').click()`); await ready();
+  assert.equal(Number(await evaluate(`document.querySelector('.cost-point[data-model="CountGD"]').dataset.x`)), dlSeconds / 3600 * 1.5);
+  for (const value of ['', '-1']) {
+    await evaluate(`document.querySelector('#dl-custom-rate').value=${JSON.stringify(value)};document.querySelector('#dl-custom-rate').dispatchEvent(new Event('input'))`);
+    assert.equal(await evaluate(`document.querySelector('#dl-custom-rate').getAttribute('aria-invalid')`), 'true');
+    assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), llmPoints);
+  }
+  await evaluate(`document.querySelector('#dl-custom-rate').value='0';document.querySelector('#dl-custom-rate').dispatchEvent(new Event('input'))`);
+  assert.equal(Number(await evaluate(`document.querySelector('.cost-point[data-model="CountGD"]').dataset.x`)), 0);
+  assert.equal(await evaluate(`document.querySelector('#dl-custom-rate').getAttribute('aria-invalid')`), 'false');
+  assert.equal(await readFile(new URL('eval4/colab-dl.json', root), 'utf8'), originalFile);
+  await evaluate(`document.querySelector('#dl-rate-source').value='saved';document.querySelector('#dl-rate-source').dispatchEvent(new Event('change'))`);
+  assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), llmPoints);
   colab.hourly_cost_usd = .75; // Test arithmetic only, never a suggested cloud price.
   await evaluate(`document.querySelector('#refresh').click()`); await ready();
   assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), llmPoints + 4);
@@ -178,7 +229,7 @@ try {
   assert.equal(await evaluate(`document.querySelector('#confidence').hidden`), false);
   assert.equal(await evaluate(`document.querySelectorAll('.confidence-point').length`), llmConfidence);
   colab = null; await command('Fetch.disable');
-  await command('Network.setBlockedURLs', { urls: ['*/eval4/*_group1.json*'] });
+  await command('Network.setBlockedURLs', { urls: ['*/eval4/*_group1.json*', '*/eval4/colab-dl.json*'] });
   await command('Page.navigate', { url: base });
   for (let i = 0; i < 150; i++) {
     if (await evaluate(`document.querySelector('#load-status')?.classList.contains('error')`)) break;

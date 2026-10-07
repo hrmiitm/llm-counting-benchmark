@@ -7,6 +7,16 @@ button, select { min-height: 44px; border: 1px solid var(--line); border-radius:
 button { cursor: pointer; }
 button:hover { background: var(--hover); }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.pricing-panel { border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin: 18px 0; background: var(--soft); }
+.pricing-controls { display: flex; flex-wrap: wrap; gap: 14px 24px; }
+.pricing-controls label { flex: 1 1 220px; min-width: 0; max-width: 500px; font-size: 14px; font-weight: 600; }
+.pricing-controls select, .pricing-controls input { display: block; width: 100%; min-width: 0; margin-top: 6px; }
+.pricing-controls input { min-height: 44px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: var(--surface); }
+.pricing-panel .scope-note { margin-bottom: 0; overflow-wrap: anywhere; }
+.dl-cost-summary { margin-top: 16px; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.dl-cost-row { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 10px; padding: 12px; }
+.dl-cost-row + .dl-cost-row { border-top: 1px solid var(--line); }
+.dl-cost-row > * { min-width: 0; overflow-wrap: anywhere; }
 input[type=checkbox] { accent-color: var(--accent); width: 17px; height: 17px; }
 .skip-link { position: fixed; top: -70px; left: 16px; z-index: 10; background: var(--surface); padding: 10px 20px; }
 .skip-link:focus { top: 8px; }

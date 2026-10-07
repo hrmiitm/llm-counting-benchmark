@@ -36,12 +36,12 @@ class ColabTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'cusparse.h'): module.cuda_header_environment(root)
 
     def test_only_selected_models_and_cuda_variants(self):
-        self.assertEqual(set(module.MODELS), {'CountGD', 'CountGD++', 'CounTX', 'YOLO-World-S'})
+        self.assertEqual(set(module.MODELS), {'CountGD', 'CountGD++', 'CounTX'})
         for name in module.MODELS:
             requirements, variant = module.gpu_requirements(ROOT / 'DL-MODELS' / name)
             self.assertTrue(all('+cpu' not in r for r in requirements))
-            self.assertIn('torch==2.8.0+cu126' if name == 'YOLO-World-S' else 'torch==2.2.1+cu121', requirements)
-            self.assertEqual(variant, 'cu126' if name == 'YOLO-World-S' else 'cu121')
+            self.assertIn('torch==2.2.1+cu121', requirements)
+            self.assertEqual(variant, 'cu121')
 
     def test_worker_warmup_sync_clean_schema_and_no_gold(self):
         for name in module.MODELS:
@@ -78,7 +78,9 @@ class ColabTests(unittest.TestCase):
                 torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: True, get_device_capability=lambda: (7, 5),
                     get_device_name=lambda: 'Mock GPU', manual_seed_all=lambda *a: None,
                     synchronize=lambda: synchronized.append(True)), version=SimpleNamespace(cuda='12.1'),
-                    set_num_threads=lambda *a: None, manual_seed=lambda *a: None, use_deterministic_algorithms=lambda *a: None,
+                    set_num_threads=lambda *a: None, manual_seed=lambda *a: None,
+                    use_deterministic_algorithms=lambda enabled, *, warn_only: self.assertTrue(enabled and warn_only,
+                        'Prefer deterministic CUDA operations without failing unsupported cumsum during warmup'),
                     backends=SimpleNamespace(cudnn=SimpleNamespace()), inference_mode=nullcontext)
                 common = SimpleNamespace(digest=lambda *a: 'hash', packages=lambda: {}, write_json=module.write_json,
                     environment=lambda *a: None, configuration=lambda *a: {'model': name})
@@ -96,6 +98,9 @@ class ColabTests(unittest.TestCase):
                         module.worker(name, repo, 2)
                 finally: sys.path[:] = original_path
                 if name in ('CountGD', 'CountGD++'): self.assertEqual(setup_calls, [folder])
+                report = json.loads((folder / 'setup-report.json').read_text())
+                self.assertEqual(report['runtime_reproducibility']['unsupported_cuda_operations'], 'warn')
+                self.assertFalse(report['runtime_reproducibility']['bitwise_repeatability_guaranteed'])
                 self.assertEqual(len(calls), 8); self.assertEqual(len(synchronized), 16)
                 result = json.loads(stdout.getvalue().split(module.RESULT_MARKER)[1])
                 self.assertEqual(result['gpu'], 'Mock GPU'); self.assertEqual(len(result['result']['images']), 6)

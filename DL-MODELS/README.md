@@ -61,22 +61,40 @@ for GPU execution. CPU uses the upstream mathematical PyTorch implementation.
 Upload the standalone root `colab_dl_benchmark.py` file to a Colab GPU runtime.
 It checks out benchmark commit `a3cc30aabcfc999a5f6207ac1b6993ddf7f12f15`,
 reuses its original loaders/predictors/configs and the six curated images,
-and runs CountGD, CountGD++, CounTX and YOLO-World-S sequentially. FamNet is
+and runs CountGD, CountGD++ and CounTX sequentially. FamNet is
 not installed or benchmarked. Conflicting package versions are isolated.
 The committed package versions are retained with CUDA PyTorch variants:
-2.2.1/cu121 for GD/CounTX and 2.8.0/cu126 for YOLO. The GD extension is built
+2.2.1/cu121 for all three models. The GD extension is built
 with NVIDIA's CUDA 12.1 compiler and GCC 11. Two untimed target-image warm-ups
 precede each model's six measurements. Existing forward-timing scopes are
 preserved, with CUDA synchronization; startup, warm-up, disk artifacts and
 other work outside those scopes are not priced as inference.
+Seed 42 and deterministic implementations are preferred. Unsupported CUDA
+operations warn instead of failing: PyTorch 2.2.1 cannot enforce determinism
+for the floating-point `cumsum` used by GD positional encoding. The predictor
+code, counting recipe, precision and thresholds are unchanged; bitwise GPU repeatability
+is not guaranteed. This policy is recorded in the workspace setup report.
+The script sets `MPLBACKEND=Agg` and discovers the installed CUDA library
+headers automatically. It prints setup/warm-up/inference phases rather than
+the full generated dependency lock.
 
 Colab cells (first choose **Runtime → Change runtime type → GPU**):
-after committing/pushing the new script and adapter to GitHub, clone and run:
+after committing/pushing the latest script to GitHub, update and run from one
+fixed checkout (this avoids repeatedly cloning inside the previous checkout):
 
 ```python
-!git clone https://github.com/hrmiitm/llm-counting-benchmark.git /content/llm-counting-benchmark
-%cd /content/llm-counting-benchmark
-!python colab_dl_benchmark.py --output /content/colab_dl_results.json
+from pathlib import Path
+import subprocess
+
+repo = Path("/content/llm-counting-benchmark")
+if (repo / ".git").exists():
+    subprocess.run(["git", "-C", str(repo), "pull", "--ff-only"], check=True)
+else:
+    subprocess.run(["git", "clone", "https://github.com/hrmiitm/llm-counting-benchmark.git", str(repo)], check=True)
+```
+
+```python
+!python /content/llm-counting-benchmark/colab_dl_benchmark.py --output /content/colab_dl_results.json
 ```
 
 ```python
@@ -84,7 +102,7 @@ import json
 from google.colab import files
 with open("/content/colab_dl_results.json") as handle:
     result = json.load(handle)
-assert {m["model"] for m in result["models"]} == {"CountGD", "CountGD++", "CounTX", "YOLO-World-S"}
+assert {m["model"] for m in result["models"]} == {"CountGD", "CountGD++", "CounTX"}
 assert all(len(m["images"]) == 6 for m in result["models"])
 files.download("/content/colab_dl_results.json")
 ```
@@ -135,6 +153,22 @@ null without a supplied rate. Page 4 discovers the new source automatically
 and includes priced DL points in cost/error, plus an optional mean-deviation
 quality comparison even without a rate. DL models have no reasoning levels
 or count confidence and remain excluded from confidence/coverage summaries.
+
+Page 4's **DL compute rate** dropdown offers saved JSON rates, reference
+AWS/Azure/GCP T4 instance rates, and a custom USD/hour input. NVIDIA has no
+verified comparable public T4 rate, so enter any quoted rate with Custom.
+The initial view uses the labelled Azure T4 reference rate and a logarithmic
+cost axis so all three DL points appear without editing their nullable saved
+rate. DL points have model labels; their cost and mean deviation are also
+shown below the graph. Explicit URL filters and saved-rate selections remain
+available.
+Rates and source links live in root `dl-pricing.json`; these are dated
+reference scenarios, not live cloud quotes. Presets require a measured T4.
+Changing the rate updates DL costs, rankings and per-image estimates only;
+saved JSON, counting error and LLM API charges remain unchanged. The chosen
+scenario is included in the page URL and survives refresh. CPU work still
+handles image loading, tokenization and artifacts; CUDA forward timing does
+not imply an exclusively GPU pipeline or 100% GPU utilization.
 The original CPU results and LLM data are unchanged. Publish the imported
 JSON through the existing Pages workflow to update the public graphs.
 

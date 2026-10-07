@@ -1,0 +1,37 @@
+{
+  "checked_on": "2026-10-08",
+  "currency": "USD",
+  "presets": [
+    {
+      "id": "aws",
+      "label": "AWS · T4 instance · $0.526/h",
+      "hourly_cost_usd": 0.526,
+      "description": "Reference Linux on-demand g4dn.xlarge, US East (N. Virginia): one T4, 4 vCPUs, 16 GiB RAM. AWS's published reference rate; verify the current quote before renting.",
+      "sources": [{"title": "AWS published instance rate", "url": "https://aws.amazon.com/blogs/compute/deep-dive-on-amazon-ec2-vt1-instances/"}]
+    },
+    {
+      "id": "azure",
+      "label": "Azure · T4 instance · $0.526/h",
+      "hourly_cost_usd": 0.526,
+      "description": "Linux pay-as-you-go Standard_NC4as_T4_v3, East US: one T4, 4 vCPUs, 28 GiB RAM. Verified using Microsoft's retail pricing API.",
+      "sources": [{"title": "Azure retail rate", "url": "https://prices.azure.com/api/retail/prices?$filter=armSkuName%20eq%20%27Standard_NC4as_T4_v3%27%20and%20armRegionName%20eq%20%27eastus%27%20and%20priceType%20eq%20%27Consumption%27"}]
+    },
+    {
+      "id": "gcp",
+      "label": "GCP · T4 + host · ≈ $0.540/h",
+      "hourly_cost_usd": 0.540047,
+      "description": "Reference on-demand T4 plus 4 predefined N1 vCPUs and 15 GiB RAM, Iowa: $0.35 GPU + (4 × $0.031611 + 15 × $0.004237) host per hour. No sustained-use or commitment discount.",
+      "sources": [
+        {"title": "GCP GPU rates", "url": "https://cloud.google.com/products/compute/gpus-pricing?hl=en"},
+        {"title": "GCP host rates", "url": "https://cloud.google.com/products/compute/resources/pricing"}
+      ]
+    },
+    {
+      "id": "nvidia",
+      "label": "NVIDIA · T4 quote unavailable; use Custom",
+      "hourly_cost_usd": null,
+      "description": "No comparable public T4 hourly rate was verified. Enter a quoted full-instance rate using Custom.",
+      "sources": [{"title": "NVIDIA DGX Cloud Lepton", "url": "https://www.nvidia.com/en-us/data-center/dgx-cloud-lepton/"}]
+    }
+  ]
+}

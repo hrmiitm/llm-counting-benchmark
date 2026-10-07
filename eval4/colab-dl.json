@@ -1,0 +1,112 @@
+{
+  "provider": "Google Colab",
+  "gpu": "Tesla T4",
+  "hourly_cost_usd": null,
+  "models": [
+    {
+      "model": "CountGD",
+      "images": [
+        {
+          "image": "813.jpg",
+          "predicted_count": 183,
+          "inference_seconds": 0.5464968459996271
+        },
+        {
+          "image": "869.jpg",
+          "predicted_count": 295,
+          "inference_seconds": 0.5846058269999048
+        },
+        {
+          "image": "1084.jpg",
+          "predicted_count": 201,
+          "inference_seconds": 0.5497641340002701
+        },
+        {
+          "image": "2373.jpg",
+          "predicted_count": 129,
+          "inference_seconds": 0.569569711999975
+        },
+        {
+          "image": "2648.jpg",
+          "predicted_count": 90,
+          "inference_seconds": 0.6201900129999558
+        },
+        {
+          "image": "2933.jpg",
+          "predicted_count": 45,
+          "inference_seconds": 0.4699977000000217
+        }
+      ]
+    },
+    {
+      "model": "CountGD++",
+      "images": [
+        {
+          "image": "813.jpg",
+          "predicted_count": 190,
+          "inference_seconds": 0.8273520980001194
+        },
+        {
+          "image": "869.jpg",
+          "predicted_count": 263,
+          "inference_seconds": 0.8794099169999754
+        },
+        {
+          "image": "1084.jpg",
+          "predicted_count": 229,
+          "inference_seconds": 0.8346731719998388
+        },
+        {
+          "image": "2373.jpg",
+          "predicted_count": 133,
+          "inference_seconds": 0.7748967769998671
+        },
+        {
+          "image": "2648.jpg",
+          "predicted_count": 92,
+          "inference_seconds": 0.889771199000279
+        },
+        {
+          "image": "2933.jpg",
+          "predicted_count": 45,
+          "inference_seconds": 0.6406603099999302
+        }
+      ]
+    },
+    {
+      "model": "CounTX",
+      "images": [
+        {
+          "image": "813.jpg",
+          "predicted_count": 181.79251098632812,
+          "inference_seconds": 0.14337550199979887
+        },
+        {
+          "image": "869.jpg",
+          "predicted_count": 222.44769287109375,
+          "inference_seconds": 0.1443258340000284
+        },
+        {
+          "image": "1084.jpg",
+          "predicted_count": 199.6401824951172,
+          "inference_seconds": 0.15464149299987184
+        },
+        {
+          "image": "2373.jpg",
+          "predicted_count": 126.66886138916016,
+          "inference_seconds": 0.0955698319999101
+        },
+        {
+          "image": "2648.jpg",
+          "predicted_count": 81.90155029296875,
+          "inference_seconds": 0.15980334199957724
+        },
+        {
+          "image": "2933.jpg",
+          "predicted_count": 44.92913055419922,
+          "inference_seconds": 0.09546541899999283
+        }
+      ]
+    }
+  ]
+}

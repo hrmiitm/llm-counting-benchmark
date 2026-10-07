@@ -133,6 +133,20 @@ export function confidenceRows(config) {
   return config.rows.filter(r => r.confidence !== null && r.deviation !== null);
 }
 
+// Reprice a view, leaving the saved envelope, predictions and timings intact.
+export function priceDLConfig(config, rate = config.data.hourly_cost_usd) {
+  if (!config.isDL) return config;
+  if (rate !== null && (!finite(rate) || rate < 0)) throw new Error('Invalid DL hourly rate.');
+  const total = rate === null ? null : config.totalInferenceSeconds / 3600 * rate;
+  if (total !== null && (!finite(total) || !finite(total / config.n * 1000))) throw new Error('DL cost overflow.');
+  return { ...config, effectiveHourlyRate: rate,
+    rows: config.rows.map(r => ({ ...r, cost: rate === null ? null : r.raw.inference_seconds / 3600 * rate })),
+    knownCost: total ?? 0, unknownCosts: rate === null ? config.n : 0,
+    totalCost: config.complete ? total : null, costEligible: config.complete && rate !== null,
+    costPerImage: total === null ? null : total / config.n,
+    costPer1000Images: total === null ? null : total / config.n * 1000 };
+}
+
 export function confidenceSummary(config) {
   const rows = confidenceRows(config);
   // Both means must describe the SAME full image set, never mismatched subsets.

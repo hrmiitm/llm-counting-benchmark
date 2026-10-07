@@ -22,7 +22,7 @@ import sysconfig
 import tarfile
 from urllib.request import urlretrieve
 
-MODELS = ("CountGD", "CountGD++", "CounTX", "YOLO-World-S")
+MODELS = ("CountGD", "CountGD++", "CounTX")
 REPOSITORY = "https://github.com/hrmiitm/llm-counting-benchmark.git"
 REVISION = "a3cc30aabcfc999a5f6207ac1b6993ddf7f12f15"
 RESULT_MARKER = "COLAB_MODEL_RESULT="
@@ -70,7 +70,7 @@ def cuda_toolchain(workspace):
 
 def gpu_requirements(folder):
     """Keep every committed package version; replace only CPU PyTorch builds."""
-    variant = "cu126" if folder.name == "YOLO-World-S" else "cu121"
+    variant = "cu121"
     requirements = []
     for line in (folder / "requirements.lock").read_text().splitlines():
         if line and not line[0].isspace() and "==" in line and not line.startswith("#"):
@@ -81,7 +81,7 @@ def gpu_requirements(folder):
 
 
 def install_model(folder, uv, env):
-    version = "3.12.14" if folder.name == "YOLO-World-S" else "3.10.19"
+    version = "3.10.19"
     python = folder / ".venv/bin/python"
     if not python.exists():
         run(uv, "venv", "--python", version, folder / ".venv", env=env)
@@ -90,10 +90,12 @@ def install_model(folder, uv, env):
     source.write_text("\n".join(requirements) + "\n")
     if not lock.exists():
         run(uv, "pip", "compile", source, "--python", python, "--generate-hashes", "-o", lock,
+            "--quiet",
             "--default-index", "https://pypi.org/simple",
             "--extra-index-url", f"https://download.pytorch.org/whl/{variant}",
             "--index-strategy", "unsafe-best-match", env=env)
     run(uv, "pip", "sync", "--require-hashes", "--python", python, lock,
+        "--quiet",
         "--default-index", "https://pypi.org/simple",
         "--extra-index-url", f"https://download.pytorch.org/whl/{variant}",
         "--index-strategy", "unsafe-best-match", env=env)
@@ -124,13 +126,14 @@ def worker(name, repo, warmups):
     import torch
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is unavailable. Select a GPU runtime in Google Colab.")
-    if name != "YOLO-World-S" and torch.cuda.get_device_capability()[0] > 9:
+    if torch.cuda.get_device_capability()[0] > 9:
         raise RuntimeError("This repository's pinned PyTorch 2.2.1 build needs a compatible GPU (e.g. T4/L4/A100), not Blackwell. No settings were substituted.")
     folder = repo / "DL-MODELS" / name
+    print(f"{name}: checking pinned source and checkpoint assets", flush=True)
     # The existing setup downloads/checks the same source and checkpoint assets.
     # Dependency installation above is the separate CUDA variant of its CPU lock.
     common.install_environment = lambda *_args, **_kwargs: {
-        "python_version_requested": "3.12.14" if name == "YOLO-World-S" else "3.10.19",
+        "python_version_requested": "3.10.19",
         "dependency_lock_sha256": common.digest(folder / "requirements.cuda.lock"),
         "packages": common.packages(),
     }
@@ -142,6 +145,7 @@ def worker(name, repo, warmups):
         if not (extension / "setup.py").is_file():
             raise RuntimeError(f"Upstream CUDA extension is missing after {name} setup: {extension}")
         header_env = cuda_header_environment()
+        print(f"{name}: installing CUDA attention extension", flush=True)
         run("uv", "pip", "install", "--python", sys.executable, "--no-deps", "--no-build-isolation",
             extension, env={**os.environ, **header_env})
         import MultiScaleDeformableAttention
@@ -152,6 +156,10 @@ def worker(name, repo, warmups):
     report["gpu"] = torch.cuda.get_device_name()
     report["repository_revision"] = REVISION
     report["warmup_iterations"] = warmups
+    report["runtime_reproducibility"] = {
+        "seed": 42, "prefer_deterministic_algorithms": True, "unsupported_cuda_operations": "warn",
+        "cudnn_benchmark": False, "bitwise_repeatability_guaranteed": False,
+    }
     if header_env:
         report["cuda_build_header_environment"] = header_env
     report["implementation_note"] = "Colab CUDA; original predictor and inference settings; CUDA variant dependency lock."
@@ -159,12 +167,15 @@ def worker(name, repo, warmups):
     common.environment(folder)
     torch.set_num_threads(4)
     random.seed(42); np.random.seed(42); torch.manual_seed(42); torch.cuda.manual_seed_all(42)
-    torch.use_deterministic_algorithms(True)
+    # Preserve the predictor's CUDA operations. Older PyTorch cannot enforce
+    # determinism for floating-point cumsum used in GD positional encoding.
+    torch.use_deterministic_algorithms(True, warn_only=True)
     torch.backends.cudnn.benchmark = False
     config = common.configuration(folder)
     config["_config_sha256"] = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
     spec = importlib.util.spec_from_file_location("colab_model", folder / "run.py")
     runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
+    print(f"{name}: loading model on {torch.cuda.get_device_name()}", flush=True)
     state, _ = runner.load(folder, config, "cuda")
     metadata = json.loads((repo / "data/group1/metadata.json").read_text())
     items = [{key: row[key] for key in ("group", "id", "image", "label")} for row in metadata]
@@ -176,13 +187,15 @@ def worker(name, repo, warmups):
             result = runner.predict(state, repo / "data/group1" / item["image"], item, folder, config, "cuda")
         torch.cuda.synchronize()
         return result
+    print(f"{name}: {warmups} untimed warm-ups", flush=True)
     for _ in range(warmups):
         predict(items[0])
+    print(f"{name}: measuring the six benchmark images", flush=True)
     images = []
     for item in items:
         result = predict(item)
         # Original synchronized forward timings: GD includes text/image encoders;
-        # CounTX includes the sliding-window loop; YOLO profiles its network forward.
+        # CounTX includes the sliding-window loop.
         count, seconds = result["count"], result["inference_seconds"]
         if any(isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) or x < 0
                for x in (count, seconds)):
@@ -228,6 +241,7 @@ def main(argv=None):
     if any(name in ("CountGD", "CountGD++") for name in models): env.update(cuda_toolchain(workspace))
     document = {"provider": "Google Colab", "gpu": None, "hourly_cost_usd": args.hourly_cost_usd, "models": []}
     for name in models:
+        print(f"Preparing {name}: isolated CUDA dependencies", flush=True)
         python = install_model(repo / "DL-MODELS" / name, uv, env)
         command = [str(python), str(Path(__file__).resolve()), "--worker", name, "--repo", str(repo), "--warmups", str(args.warmups)]
         process = subprocess.Popen(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)

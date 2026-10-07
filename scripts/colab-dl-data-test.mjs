@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { prepareData, confidenceSummary, coverageCurve, acceptance } from '../reasoning-data.mjs';
+import { prepareData, confidenceSummary, coverageCurve, acceptance, priceDLConfig } from '../reasoning-data.mjs';
 const metadata = JSON.parse(await readFile(new URL('../eval2/metadata.json', import.meta.url)));
 const document = { provider: 'Google Colab', gpu: 'Test GPU (fixture, not a measurement)', hourly_cost_usd: null,
   models: ['CountGD', 'CountGD++', 'CounTX', 'YOLO-World-S'].map(model => ({ model,
@@ -31,6 +31,24 @@ for (const c of data.configs) {
   assert.equal(c.costEligible, true);
 }
 const original = structuredClone(document);
+const snapshot = structuredClone(data);
+for (const rate of [0, .526, .540047, 1.5, null]) {
+  for (const c of data.configs) {
+    const priced = priceDLConfig(c, rate);
+    assert.equal(priced.totalCost, rate === null ? null : c.totalInferenceSeconds / 3600 * rate);
+    assert.equal(priced.costPerImage, rate === null ? null : priced.totalCost / c.n);
+    assert.equal(priced.costPer1000Images, rate === null ? null : priced.totalCost / c.n * 1000);
+    assert.equal(priced.deviation, c.deviation);
+    assert.deepEqual(priced.rows.map(r => r.count), c.rows.map(r => r.count));
+    assert.equal(priced.data, c.data, 'Saved envelope is retained, not rewritten');
+    assert.equal(priced.costEligible, rate !== null);
+    assert.equal(priceDLConfig(c).totalCost, c.totalCost, 'Default restores the saved rate');
+  }
+}
+assert.deepEqual(data, snapshot, 'Pricing scenarios never mutate measured data');
+const llm = { isDL: false, data: { hourly_cost_usd: null }, totalCost: .02 };
+assert.equal(priceDLConfig(llm, .526), llm, 'LLM charges remain unchanged');
+for (const bad of [-1, Infinity, NaN, '0.526']) assert.throws(() => priceDLConfig(data.configs[0], bad));
 for (const mutation of [d => { d.hourly_cost_usd = -1; }, d => { d.models[0].model = 'FamNet'; },
   d => { d.models[0].images.pop(); }, d => { d.models[0].images[0] = d.models[0].images[1]; },
   d => { d.models[0].images[0].predicted_count = null; }, d => { d.models[0].images[0].inference_seconds = -1; }]) {

@@ -1,13 +1,14 @@
 import { EFFORTS, finite, isResultPath, nameOf, prepareData, confidenceSummary,
-  coverageCurve, acceptance, reasoningPairs } from './reasoning-data.mjs?v=3';
+  coverageCurve, acceptance, reasoningPairs, priceDLConfig } from './reasoning-data.mjs?v=5';
 
 const $ = selector => document.querySelector(selector);
 const pct = (n, digits = 2) => finite(n) ? `${n.toFixed(digits)}%` : 'Unavailable';
 const usd = n => finite(n) ? `$${n.toFixed(6)}` : 'Unknown';
 const cap = n => finite(n) ? n.toLocaleString('en-US') : 'Unrecorded';
 const titleEffort = e => e === 'none' ? 'Colab GPU' : e[0].toUpperCase() + e.slice(1);
-const state = { model: 'all', efforts: [...EFFORTS], cutoff: 90, scale: 'linear' };
+const state = { model: 'all', efforts: [...EFFORTS], cutoff: 90, scale: 'log', rateSource: 'azure', customRate: '' };
 let data = null, loading = false, notices = [], lastSources = [], refreshTimer;
+let pricing = { presets: [] };
 const colors = new Map();
 
 function node(tag, text, attrs = {}) {
@@ -22,11 +23,14 @@ function readState() {
   state.efforts = query.has('efforts') ? query.get('efforts').split(',').filter(e => EFFORTS.includes(e)) : [...EFFORTS];
   const cutoff = Number(query.get('cutoff') ?? 90);
   state.cutoff = Number.isFinite(cutoff) ? Math.min(100, Math.max(0, cutoff)) : 90;
-  state.scale = query.get('scale') === 'log' ? 'log' : 'linear';
+  state.scale = query.get('scale') === 'linear' ? 'linear' : 'log';
+  state.rateSource = query.get('dl-rate') ?? 'azure';
+  state.customRate = query.get('dl-custom') ?? '';
 }
 function writeState(section = location.hash.split('?')[0].slice(1) || 'reasoning', push = false) {
   const query = new URLSearchParams({ model: state.model, efforts: state.efforts.join(','),
-    cutoff: String(state.cutoff), scale: state.scale });
+    cutoff: String(state.cutoff), scale: state.scale, 'dl-rate': state.rateSource });
+  if (state.customRate !== '') query.set('dl-custom', state.customRate);
   history[push ? 'pushState' : 'replaceState'](null, '', `${location.pathname}${location.search}#${section}?${query}`);
 }
 function syncControls() {
@@ -35,8 +39,46 @@ function syncControls() {
   $('#confidence-cutoff').value = state.cutoff;
   $('#cutoff-value').textContent = `${state.cutoff}%`;
   $('#cost-scale').value = state.scale;
+  const t4 = data.configs.filter(c => c.isDL).every(c => /\bT4\b/i.test(c.data.gpu));
+  const picker = $('#dl-rate-source');
+  picker.replaceChildren(node('option', 'Saved JSON rate', { value: 'saved' }));
+  for (const preset of pricing.presets) {
+    const option = node('option', preset.label, { value: preset.id });
+    option.disabled = !finite(preset.hourly_cost_usd) || !t4;
+    picker.append(option);
+  }
+  picker.append(node('option', 'Custom hourly rate', { value: 'custom' }));
+  if (![...picker.options].some(o => o.value === state.rateSource && !o.disabled)) state.rateSource = 'saved';
+  picker.value = state.rateSource;
+  $('#dl-custom-control').hidden = state.rateSource !== 'custom';
+  $('#dl-custom-rate').value = state.customRate;
 }
-const selected = () => data.configs.filter(c => (state.model === 'all' || c.model === state.model) && (c.isDL || state.efforts.includes(c.effort)));
+function dlRate() {
+  if (state.rateSource === 'saved') return undefined;
+  if (state.rateSource === 'custom') {
+    const rate = state.customRate.trim() ? Number(state.customRate) : NaN;
+    return finite(rate) && rate >= 0 ? rate : null;
+  }
+  return pricing.presets.find(p => p.id === state.rateSource)?.hourly_cost_usd ?? null;
+}
+const selected = () => data.configs.filter(c => (state.model === 'all' || c.model === state.model) && (c.isDL || state.efforts.includes(c.effort)))
+  .map(c => priceDLConfig(c, dlRate()));
+function renderPricing() {
+  const configs = data.configs.filter(c => c.isDL);
+  $('#dl-pricing').hidden = !configs.length;
+  const note = $('#dl-rate-note');
+  const preset = pricing.presets.find(p => p.id === state.rateSource);
+  const invalid = state.rateSource === 'custom' && dlRate() === null;
+  $('#dl-custom-rate').setAttribute('aria-invalid', String(invalid));
+  const text = state.rateSource === 'saved'
+    ? configs.map(c => `${c.name}: ${c.data.hourly_cost_usd === null ? 'hourly rate unknown' : `${usd(c.data.hourly_cost_usd)}/h`}`).join(' · ') + '. Choose a provider or Custom to estimate rental cost.'
+    : state.rateSource === 'custom' ? invalid ? 'Enter a finite, nonnegative USD hourly rate. DL costs remain unknown until the rate is valid.'
+      : `Custom scenario: ${usd(dlRate())}/h, applied to every DL model.`
+      : `${usd(dlRate())}/h. ${preset.description} Sources reviewed ${pricing.checked_on}.`;
+  note.replaceChildren(document.createTextNode(text));
+  for (const source of preset?.sources ?? []) note.append(document.createTextNode(' '), node('a', source.title, { href: source.url, target: '_blank', rel: 'noopener' }));
+  note.append(document.createTextNode(` Measurements: ${[...new Set(configs.map(c => `${c.data.provider_endpoint} / ${c.data.gpu}`))].join('; ')}. Inference-only estimate; not a cloud invoice.`));
+}
 const colorOf = model => colors.get(model) ?? 'var(--series-1)';
 function revealSection(section, behavior) {
   const element = document.getElementById(section);
@@ -73,11 +115,13 @@ async function load() {
   loading = true; $('#refresh').disabled = true;
   $('#load-status').textContent = 'Reading the saved eval4 results…';
   try {
-    const [paths, metadata] = await Promise.all([discover(), fetchJSON('eval2/metadata.json')]);
+    const [paths, metadata, priceList] = await Promise.all([discover(), fetchJSON('eval2/metadata.json'), fetchJSON('dl-pricing.json').catch(() => null)]);
+    pricing = priceList?.currency === 'USD' && Array.isArray(priceList.presets) ? priceList : { presets: [] };
     if (!paths.length) throw new Error('No eval4 result files were found.');
     const outcomes = await Promise.allSettled(paths.map(async path => ({ path, data: await fetchJSON(path) })));
     const sources = outcomes.filter(r => r.status === 'fulfilled').map(r => r.value);
     notices = outcomes.flatMap((r, i) => r.status === 'rejected' ? [`Could not load ${paths[i]}; this result is not represented.`] : []);
+    if (!pricing.presets.length) notices.push('Provider rate presets are unavailable; saved JSON rates and Custom remain usable.');
     data = prepareData(sources, metadata);
     if (!data.configs.length) throw new Error('No valid model/effort envelopes are available in eval4.');
     lastSources = sources.filter(s => data.configs.some(c => c.path === s.path));
@@ -202,7 +246,7 @@ function plot(target, configs, kind) {
   for (const p of points) {
     const px = x(kind === 'cost' ? p.totalCost : kind === 'confidence' ? p.confidence * 100 : p.coverage), py = y(p.deviation);
     let detail;
-    if (kind === 'cost') detail = `${p.name}, ${titleEffort(p.effort)}: ${usd(p.totalCost)} for ${p.n} images; mean deviation ${pct(p.deviation)}; ${p.isDL ? `${p.data.gpu}; ${p.totalInferenceSeconds.toFixed(6)}s inference; ${usd(p.costPerImage)}/image; ${usd(p.costPer1000Images)}/1,000 images (compute estimate).` : `${cap(p.data.max_tokens)}-token cap.`}`;
+    if (kind === 'cost') detail = `${p.name}, ${titleEffort(p.effort)}: ${usd(p.totalCost)} for ${p.n} images; mean deviation ${pct(p.deviation)}; ${p.isDL ? `${p.data.gpu}; ${p.totalInferenceSeconds.toFixed(6)}s inference; ${usd(p.effectiveHourlyRate)}/h (${state.rateSource}); ${usd(p.costPerImage)}/image; ${usd(p.costPer1000Images)}/1,000 images (compute estimate).` : `${cap(p.data.max_tokens)}-token cap.`}`;
     if (kind === 'confidence') detail = `${p.name}, ${titleEffort(p.effort)}: mean confidence ${pct(p.confidence * 100, 1)}; mean error ${pct(p.deviation)} across all ${p.imageCount} images.`;
     if (kind === 'coverage') detail = `${nameOf(p.model)}, ${titleEffort(p.effort)}: keep ${p.accepted}/${p.denominator} answers (${pct(p.coverage, 1)} coverage), confidence at least ${pct(p.confidence * 100, 1)}; mean deviation ${pct(p.deviation)}. Images: ${p.images.join(', ')}.`;
     const size = 7;
@@ -223,6 +267,15 @@ function plot(target, configs, kind) {
     for (const event of ['mouseenter', 'focus', 'click']) mark.addEventListener(event, inspect);
     mark.addEventListener('keydown', event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); inspect(); } });
     svg.append(mark);
+    if (kind === 'cost' && p.isDL) {
+      const index = points.filter(point => point.isDL).indexOf(p);
+      const labelX = Math.max(4, Math.min(px + 12, width - p.name.length * 8 - 4));
+      const labelY = Math.max(top + 16, py - 18 - index * 20);
+      svg.append(svgNode('line', { x1: px, y1: py - size, x2: labelX, y2: labelY + 3,
+        stroke: colorOf(p.model), 'stroke-width': 1, 'aria-hidden': 'true' }));
+      svg.append(svgNode('text', { x: labelX, y: labelY, class: 'point-label',
+        'data-label-model': p.model }, p.name));
+    }
     if (kind !== 'coverage' && state.model !== 'all' && !p.isDL) {
       const label = titleEffort(p.effort), labelWidth = label.length * 8;
       const fitsRight = px + 12 + labelWidth < width - 4;
@@ -244,7 +297,7 @@ function plot(target, configs, kind) {
 function renderReadings(configs) {
   const eligible = configs.filter(c => c.costEligible), pairs = reasoningPairs(configs);
   const better = pairs.filter(p => p.errorReduction > 1e-9).length;
-  $('#cost-caption').textContent = `Each point covers the same ${data.images.length} images. Incomplete results and unknown costs are excluded. ${state.scale === 'log' ? 'Log spacing compares cost ratios.' : 'Linear spacing compares dollar differences.'}`;
+  $('#cost-caption').textContent = `Each point covers the same ${data.images.length} images. Incomplete results and unknown costs are excluded. ${state.scale === 'log' ? 'Log spacing compares cost ratios; zero-cost points are omitted.' : 'Linear spacing compares dollar differences.'}`;
   $('#cost-reading').textContent = pairs.length
     ? `${better} of ${pairs.length} models have lower mean error at High than Low. Moving down is an improvement; moving up and right means paying more for higher error.`
     : 'Select low and high for a model with complete, matching configurations to compare the extra cost with the change in counting error.';
@@ -282,6 +335,8 @@ function renderQuestions(configs) {
     ['What does a confidence point represent?', 'One model at one reasoning level, averaged across all images. The horizontal position is its mean stated confidence; the vertical position is its mean absolute percentage count deviation. Both means use the same full image set. This does not establish formal probability calibration: confidence means P(exact count), while numerical error measures closeness.'],
     ['Why might a point or a model be missing?', !configs.length ? 'No reasoning configurations are selected. Enable at least one level to see its results.' : partial.length ? partial.map(c => `${c.name}, ${c.effort}: ${c.successful}/${c.n} valid answers; ${c.failed} failed, ${c.skipped} skipped, ${c.missing} missing; ${c.unknownCosts} unknown charges.`).join(' ') + ' Partial means are not compared against complete runs. Confidence points also require valid confidence for every image.' : `All ${configs.length} selected configurations have complete answers and known charges. A confidence point also requires valid confidence for every image. Missing runs and smoke tests are excluded; partial runs remain in the detailed table.`],
     ['Did only reasoning effort change?', configs.every(c => c.isDL) && configs.length ? 'DL entries are one Colab GPU configuration per model, not a reasoning-level sweep. The Colab script reuses the pinned counting configurations; its compact export does not independently document every configuration field.' : `The page checks recorded prompts, sampling, token caps, provider pins, tools, fallbacks and timeouts within each LLM. Lines and reasoning comparisons are withheld if those settings differ across efforts. The selected LLM token caps are ${[...new Set(configs.filter(c => !c.isDL).map(c => cap(c.data.max_tokens)))].join(' / ') || 'unavailable'}. Cross-model differences cannot be attributed to effort alone.`],
+    ['Did these DL models run entirely on the GPU?', 'All three Colab models use CUDA for their neural-network forward passes. Image loading, initial transforms, text tokenization and saving results also use the CPU. The benchmark does not measure GPU utilization or imply 100% utilization. Saved timing covers synchronized inference, not the full pipeline.'],
+    ['What changes when I choose a compute provider?', 'The selected hourly rate reprices the same Colab inference times for every DL model: cost = seconds ÷ 3,600 × USD/hour. Cost points, rankings, per-image prices and answers update; predictions, error and LLM API charges stay fixed. Provider choices are cost scenarios, not performance measurements on those clouds. NVIDIA has no verified comparable T4 preset; use Custom for a quoted rate.'],
     ['Can I use this to choose a production model?', `Use it to identify candidates, then test your own images and error tolerance. This is a selected ${data.images.length}-image pilot, not the full FSC-147 benchmark. One answer per image and configuration gives little evidence about repeatability or generalization. The supplied counts have not been independently audited here.`],
   ];
   const container = $('#questions'), open = new Set([...container.querySelectorAll('details[open]')].map(d => d.dataset.question));
@@ -303,6 +358,7 @@ function renderRecords(configs) {
     const cost = node('td', c.totalCost !== null ? usd(c.totalCost) : c.isDL ? 'Unknown (no hourly rate)' : `${usd(c.knownCost)} known`);
     if (c.isDL) {
       cost.append(node('small', `${c.totalInferenceSeconds.toFixed(6)}s inference`));
+      if (c.effectiveHourlyRate !== null) cost.append(node('small', `${usd(c.effectiveHourlyRate)}/h · ${state.rateSource} rate`));
       if (c.totalCost !== null) cost.append(node('small', `${usd(c.costPerImage)}/image · ${usd(c.costPer1000Images)}/1,000`));
     } else if (c.totalCost === null) cost.append(node('small', `${c.unknownCosts} unknown charges · incomplete comparison`)); tr.append(cost);
     const confidence = node('td', c.isDL ? 'Not reported' : pct(c.confidence === null ? null : c.confidence * 100, 1));
@@ -330,14 +386,27 @@ function renderQuality(configs) {
     root.append(row);
   }
 }
+function renderDLEstimates(configs) {
+  const root = $('#dl-cost-summary'), models = configs.filter(c => c.isDL);
+  root.hidden = !models.length;
+  root.replaceChildren();
+  for (const c of models) {
+    const row = node('div', null, { class: 'dl-cost-row', 'data-model': c.model,
+      'data-cost': c.totalCost ?? '', 'data-deviation': c.deviation ?? '' });
+    row.append(node('strong', c.name), node('span', `${usd(c.totalCost)} for ${c.n} images`),
+      node('span', `${pct(c.deviation)} mean error`));
+    root.append(row);
+  }
+}
 function render() {
+  renderPricing();
   $('#cost-detail').textContent = 'Hover, tap or keyboard-focus a point for its cost and counting deviation.';
   $('#confidence-detail').textContent = 'Select a model-level point to see its mean confidence and mean error.';
   $('#coverage-detail').textContent = 'Select a curve point to see its confidence cutoff, accepted images and mean error.';
   const configs = selected();
   const onlyDL = configs.length && configs.every(c => c.isDL);
   $('#confidence').hidden = !!onlyDL; $('#coverage').hidden = !!onlyDL;
-  renderLegend(); renderHeadlines(configs); renderReadings(configs); renderQuestions(configs); renderRecords(configs); renderPlots(); renderQuality(configs);
+  renderLegend(); renderHeadlines(configs); renderReadings(configs); renderQuestions(configs); renderRecords(configs); renderPlots(); renderQuality(configs); renderDLEstimates(configs);
   $('#dl-symbol').hidden = !data.configs.some(c => c.isDL);
   $('#selection-note').textContent = `${state.model === 'all' ? 'All models' : nameOf(state.model)} · ${onlyDL ? 'Colab GPU' : state.efforts.map(titleEffort).join(' / ') || 'no LLM reasoning levels selected'} · ${configs.length} configurations. Reasoning controls apply to LLMs only.`;
   const warnings = [...notices, ...data.warnings];
@@ -360,6 +429,8 @@ for (const input of document.querySelectorAll('input[name=effort]')) input.addEv
   state.efforts = [...document.querySelectorAll('input[name=effort]:checked')].map(i => i.value); render(); writeState();
 });
 $('#cost-scale').addEventListener('change', event => { state.scale = event.target.value; render(); writeState(); });
+$('#dl-rate-source').addEventListener('change', event => { state.rateSource = event.target.value; syncControls(); render(); writeState(); });
+$('#dl-custom-rate').addEventListener('input', event => { state.customRate = event.target.value; render(); writeState(); });
 $('#confidence-cutoff').addEventListener('input', event => { state.cutoff = Number(event.target.value); syncControls(); render(); writeState(); });
 $('#refresh').addEventListener('click', load);
 $('#auto-refresh').addEventListener('change', event => {
