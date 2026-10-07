@@ -70,7 +70,10 @@ class ColabTests(unittest.TestCase):
                     self.assertEqual(set(item), {'group', 'id', 'image', 'label'}); self.assertEqual(device, 'cuda')
                     self.assertGreater(len(synchronized), len(calls)); calls.append(item['image'])
                     return {'count': 3.125, 'inference_seconds': .25}
-                runner = SimpleNamespace(load=lambda *a: (None, None), predict=predict)
+                def load(*args):
+                    self.assertEqual(os.environ['MPLBACKEND'], 'Agg', 'Override inherited Colab inline backend before loading model utilities')
+                    return None, None
+                runner = SimpleNamespace(load=load, predict=predict)
                 loader = SimpleNamespace(exec_module=lambda *a: None)
                 torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: True, get_device_capability=lambda: (7, 5),
                     get_device_name=lambda: 'Mock GPU', manual_seed_all=lambda *a: None,
@@ -85,6 +88,7 @@ class ColabTests(unittest.TestCase):
                     with patch.dict(sys.modules, {'torch': torch, 'numpy': numpy, 'common': common,
                             'detector_setup': SimpleNamespace(setup=setup),
                             'MultiScaleDeformableAttention': SimpleNamespace(ms_deform_attn_forward=lambda: None)}), \
+                        patch.dict(os.environ, {'MPLBACKEND': 'module://matplotlib_inline.backend_inline'}), \
                         patch.object(module.runpy, 'run_path', side_effect=run_setup), patch.object(module, 'run', side_effect=execute), \
                         patch.object(module, 'cuda_header_environment', return_value={'CPATH': 'mock-CUDA-headers', 'NVCC_PREPEND_FLAGS': '-Imock-CUDA-headers'}), \
                         patch.object(module.importlib.util, 'spec_from_file_location', return_value=SimpleNamespace(loader=loader)), \

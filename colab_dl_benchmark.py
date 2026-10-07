@@ -117,6 +117,7 @@ def cuda_header_environment(site_packages=None):
 
 def worker(name, repo, warmups):
     """One process per model avoids conflicting timm/OpenCLIP/module versions."""
+    os.environ["MPLBACKEND"] = "Agg"  # Colab's inline backend is unavailable in isolated model environments.
     sys.path.insert(0, str(repo / "DL-MODELS"))
     import common
     import numpy as np
@@ -222,7 +223,7 @@ def main(argv=None):
     run("git", "-C", repo, "diff", "--exit-code", "--", "data/group1", "DL-MODELS/common.py",
         "DL-MODELS/detector.py", *[f"DL-MODELS/{name}/{file}" for name in MODELS for file in ("config.json", "run.py")])
     models = list(dict.fromkeys(args.model or MODELS))
-    env = {**os.environ, "CUBLAS_WORKSPACE_CONFIG": ":4096:8", "UV_CACHE_DIR": str(workspace / "uv-cache"),
+    env = {**os.environ, "MPLBACKEND": "Agg", "CUBLAS_WORKSPACE_CONFIG": ":4096:8", "UV_CACHE_DIR": str(workspace / "uv-cache"),
            "UV_PYTHON_INSTALL_DIR": str(workspace / "python")}
     if any(name in ("CountGD", "CountGD++") for name in models): env.update(cuda_toolchain(workspace))
     document = {"provider": "Google Colab", "gpu": None, "hourly_cost_usd": args.hourly_cost_usd, "models": []}
