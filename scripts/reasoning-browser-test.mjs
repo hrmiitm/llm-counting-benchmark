@@ -73,17 +73,26 @@ try {
   assert.equal(await evaluate(`document.querySelector('#coverage').open`), false, 'Coverage is optional and closed initially');
   assert.equal(await evaluate(`document.querySelector('#records').open`), false, 'Detailed table is collapsed initially');
   const summaries = expected.configs.map(confidenceSummary).filter(Boolean);
-  const confidencePoints = await evaluate(`[...document.querySelectorAll('.confidence-point')].map(p=>({model:p.dataset.model,effort:p.dataset.effort,confidence:Number(p.dataset.x),deviation:Number(p.dataset.deviation),images:Number(p.dataset.imageCount)}))`);
+  const confidencePoints = await evaluate(`[...document.querySelectorAll('.confidence-point')].map(p=>({model:p.dataset.model,effort:p.dataset.effort,confidence:Number(p.dataset.x),accuracy:Number(p.dataset.y),images:Number(p.dataset.imageCount)}))`);
   assert.equal(confidencePoints.length, summaries.length, 'One confidence point per model/effort, not per image');
   for (const summary of summaries) {
     const point = confidencePoints.find(p => p.model === summary.model && p.effort === summary.effort);
     assert.equal(point.confidence, summary.confidence * 100);
-    assert.equal(point.deviation, summary.deviation);
+    assert.equal(point.accuracy, summary.accuracy);
     assert.equal(point.images, summary.n);
   }
   await evaluate(`document.querySelector('#coverage').open=true`);
   await new Promise(resolve => setTimeout(resolve, 150));
-  assert.equal(await evaluate(`(()=>[...document.querySelectorAll('.plot svg')].every(svg=>{const points=[...svg.querySelectorAll('.mark')].map(p=>({error:Number(p.dataset.deviation),y:p.getBBox().y+p.getBBox().height/2})).sort((a,b)=>a.error-b.error);return points.every((p,i)=>!i||p.y<=points[i-1].y+1e-6);}))()`), true, 'Larger counting error must appear higher in all three charts');
+  for (const kind of ['cost', 'confidence', 'coverage']) {
+    assert.equal(await evaluate(`(()=>{const points=[...document.querySelectorAll('#${kind}-chart .mark')].map(p=>({value:Number(p.dataset.y),y:p.getBBox().y+p.getBBox().height/2})).sort((a,b)=>a.value-b.value);return points.every((p,i)=>!i||${kind === 'cost' ? 'p.y>=points[i-1].y-1e-6' : 'p.y<=points[i-1].y+1e-6'});})()`), true, `${kind} must use its own Y direction`);
+  }
+  assert.equal(await evaluate(`document.querySelector('#cost-chart svg').dataset.zeroPosition`), 'top');
+  assert.equal(await evaluate(`document.querySelector('#coverage-chart svg').dataset.zeroPosition`), 'bottom');
+  assert.ok((await evaluate(`document.querySelector('#cost .direction-pill').textContent`)).includes('Top-left'));
+  assert.equal(await evaluate(`document.querySelector('#confidence-chart svg').dataset.yMax`), '100');
+  assert.equal(await evaluate(`document.querySelectorAll('#confidence-chart .reference-diagonal').length`), 1);
+  assert.equal(await evaluate(`document.querySelectorAll('.confidence-point[data-effort="none"]').length`), 0);
+  assert.equal(await evaluate(`(()=>{const svg=document.querySelector('#confidence-chart svg'),d=svg.querySelector('.reference-diagonal'),g=[...svg.querySelectorAll('.grid')].filter(l=>l.getAttribute('y1')===l.getAttribute('y2'));return d.getAttribute('x1')===g[0].getAttribute('x1')&&d.getAttribute('y1')===g[0].getAttribute('y1')&&d.getAttribute('x2')===g.at(-1).getAttribute('x2')&&d.getAttribute('y2')===g.at(-1).getAttribute('y1')&&d.getAttribute('stroke-dasharray')==='6 5';})()`), true, 'Dashed diagonal spans (0,0) to (100,100)');
   assert.ok((await evaluate(`document.querySelector('#coverage .section-intro').textContent`)).includes('curve rises'));
   const records = await evaluate(`[...document.querySelectorAll('#records-body tr')].map(r=>({model:r.dataset.model,effort:r.dataset.effort,deviation:r.dataset.deviation,cost:r.dataset.cost}))`);
   for (const c of expected.configs) {
@@ -144,7 +153,7 @@ try {
   const altered = prepareData(sources.map(s => s.path === override.path ? override : s), metadata).configs.find(c => c.path === override.path);
   const changeObserved = await evaluate(`[...document.querySelectorAll('#records-body tr')].find(r=>r.dataset.model===${JSON.stringify(altered.model)}&&r.dataset.effort==='low').dataset.deviation`);
   assert.equal(Number(changeObserved), altered.deviation);
-  assert.equal(await evaluate(`[...document.querySelectorAll('.confidence-point')].find(p=>p.dataset.model===${JSON.stringify(altered.model)}&&p.dataset.effort==='low').dataset.deviation`), String(altered.deviation));
+  assert.equal(await evaluate(`[...document.querySelectorAll('.confidence-point')].find(p=>p.dataset.model===${JSON.stringify(altered.model)}&&p.dataset.effort==='low').dataset.y`), String(altered.accuracy));
   override.data.results[0].cost_usd = null;
   await evaluate(`document.querySelector('#refresh').click()`); await ready();
   assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), expected.configs.filter(c => c.costEligible).length - 1);
@@ -238,5 +247,5 @@ try {
   }
   assert.equal(await evaluate(`document.querySelector('#page-content').hidden`), true);
   assert.deepEqual(errors, []);
-  console.log('PASS: full-image mean confidence/error points, conventional Y axes, optional details, raw-data values, model/effort filters, focus, URL state, mobile/light/dark layouts, static-host discovery, changed JSON and missing-data guards.');
+  console.log('PASS: confidence/accuracy points and dashed diagonal, cost error inversion isolated from coverage, DL costs, raw-data values, filters, URL state, mobile/light/dark layouts, static-host discovery, changed JSON and missing-data guards.');
 } finally { await command('Page.close'); socket.close(); }

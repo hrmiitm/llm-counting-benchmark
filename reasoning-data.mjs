@@ -2,6 +2,10 @@
 export const EFFORTS = ['low', 'medium', 'high'];
 export const finite = n => typeof n === 'number' && Number.isFinite(n);
 export const mean = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+export function countAccuracy(predicted, actual) {
+  if (!finite(predicted) || !finite(actual) || predicted < 0 || actual < 0) return null;
+  return predicted === 0 && actual === 0 ? 100 : Math.min(predicted, actual) / Math.max(predicted, actual) * 100;
+}
 export const imageKey = r => `${String(r.group)}|${r.image}`;
 export const isResultPath = path => /^eval4\/[^/]+\.json$/.test(path)
   && !['eval4/preflight.json', 'eval4/manifest.json'].includes(path);
@@ -91,13 +95,17 @@ export function prepareData(sources, metadata) {
       const attempted = !!raw && raw.status !== 'skipped' && (raw.attempt_count > 0 || ['success', 'failed'].includes(raw.status));
       const cost = attempted && finite(raw.cost_usd) && raw.cost_usd >= 0 ? raw.cost_usd : null;
       return { ...image, raw, status: raw?.status ?? 'missing', success, count: success ? raw.model_count : null,
-        confidence, deviation, attempted, cost, model: data.model, effort,
+        confidence, deviation, accuracy: success ? countAccuracy(raw.model_count, image.actual) : null,
+        attempted, cost, model: data.model, effort,
         reason: raw?.raw_response?.error?.message ?? raw?.error?.reason ?? 'No saved answer.' };
     });
     const scored = rows.filter(r => r.deviation !== null);
     const successful = rows.filter(r => r.success).length;
     const n = images.length, costKnown = rows.every(r => r.attempted && r.cost !== null);
-    const complete = successful === n && scored.length === n && data.results.length === n;
+    const imageSetValid = data.results.length === n && duplicates.size === 0
+      && data.results.every(r => truths.has(imageKey(r))) && indexed.size === n;
+    if (!imageSetValid) warnings.push(`${nameOf(data.model)}, ${effort}: result images do not match the full scoring image set; full-image comparisons are excluded.`);
+    const complete = successful === n && scored.length === n && imageSetValid;
     const knownCost = rows.reduce((sum, r) => sum + (r.cost ?? 0), 0);
     const isDL = data.model_type === 'deep learning';
     const totalInferenceSeconds = isDL ? data.results.reduce((sum, r) => sum + r.inference_seconds, 0) : null;
@@ -106,8 +114,8 @@ export function prepareData(sources, metadata) {
     return { id: `${data.model}|${effort}`, model: data.model, name: isDL ? data.model : nameOf(data.model), effort, path, data, isDL,
       totalInferenceSeconds, costPerImage: isDL && costKnown ? computeCost / n : null,
       costPer1000Images: isDL && costKnown ? computeCost / n * 1000 : null,
-      signature: signature(data), rows, n, successful, scored: scored.length, complete,
-      deviation: mean(scored.map(r => r.deviation)), knownCost,
+      signature: signature(data), rows, n, successful, scored: scored.length, complete, imageSetValid,
+      deviation: mean(scored.map(r => r.deviation)), accuracy: mean(rows.map(r => r.accuracy).filter(finite)), knownCost,
       unknownCosts: rows.filter(r => r.attempted && r.cost === null).length,
       totalCost: complete && costKnown ? (isDL ? computeCost : knownCost) : null,
       costEligible: complete && costKnown, confidence: mean(rows.filter(r => r.confidence !== null).map(r => r.confidence)),
@@ -148,11 +156,11 @@ export function priceDLConfig(config, rate = config.data.hourly_cost_usd) {
 }
 
 export function confidenceSummary(config) {
-  const rows = confidenceRows(config);
+  const rows = config.rows.filter(r => r.confidence !== null && r.accuracy !== null);
   // Both means must describe the SAME full image set, never mismatched subsets.
-  if (!config.complete || rows.length !== config.n) return null;
+  if (config.isDL || !config.imageSetValid || config.successful !== config.n || rows.length !== config.n) return null;
   return { ...config, confidence: mean(rows.map(r => r.confidence)),
-    deviation: mean(rows.map(r => r.deviation)), imageCount: rows.length };
+    accuracy: mean(rows.map(r => r.accuracy)), imageCount: rows.length };
 }
 
 export function coverageCurve(config) {

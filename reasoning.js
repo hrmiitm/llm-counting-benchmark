@@ -1,5 +1,5 @@
 import { EFFORTS, finite, isResultPath, nameOf, prepareData, confidenceSummary,
-  coverageCurve, acceptance, reasoningPairs, priceDLConfig } from './reasoning-data.mjs?v=5';
+  coverageCurve, acceptance, reasoningPairs, priceDLConfig } from './reasoning-data.mjs?v=6';
 
 const $ = selector => document.querySelector(selector);
 const pct = (n, digits = 2) => finite(n) ? `${n.toFixed(digits)}%` : 'Unavailable';
@@ -192,7 +192,8 @@ function plot(target, configs, kind) {
   if (!points.length) { container.append(node('p', 'No eligible points for this selection. Select another model or reasoning level; missing answers are never shown as zero error.', { class: 'empty-plot' })); return; }
   const width = Math.max(280, Math.round(container.getBoundingClientRect().width)), height = width < 500 ? 380 : 430;
   const left = width < 500 ? 54 : 72, right = 30, top = 62, bottom = 64, pw = width - left - right, ph = height - top - bottom;
-  const maxError = Math.max(5, Math.ceil(Math.max(...points.map(p => p.deviation)) * 1.15 / 5) * 5);
+  const maxY = kind === 'confidence' ? 100 : Math.max(5, Math.ceil(Math.max(...points.map(p => p.deviation)) * 1.15 / 5) * 5);
+  const vertical = p => kind === 'confidence' ? p.accuracy : p.deviation;
   let x;
   const minCost = Math.min(...points.map(p => p.totalCost ?? Infinity)), maxCost = Math.max(...points.map(p => p.totalCost ?? 0));
   const logMin = Math.log10(minCost) - .12, logMax = Math.max(logMin + .35, Math.log10(maxCost) + .12);
@@ -200,14 +201,17 @@ function plot(target, configs, kind) {
     ? value => left + (Math.log10(value) - logMin) / (logMax - logMin) * pw
     : value => left + value / (maxCost * 1.12 || 1) * pw;
   else x = value => left + value / 100 * pw;
-  const y = value => top + ph - value / maxError * ph; // Conventional Y axis: zero at bottom.
-  const svg = svgNode('svg', { viewBox: `0 0 ${width} ${height}`, height, role: 'group', 'aria-label':
-    `${kind === 'cost' ? 'Cost' : kind === 'confidence' ? 'Mean confidence' : 'Coverage'} versus mean counting error. Zero error is at the bottom; error increases upward.` });
+  // Invert error only for the cost graph; accuracy and coverage keep their own axes.
+  const y = value => kind === 'cost' ? top + value / maxY * ph : top + ph - value / maxY * ph;
+  const svg = svgNode('svg', { viewBox: `0 0 ${width} ${height}`, height, role: 'group',
+    'data-y-max': maxY, 'data-zero-position': kind === 'cost' ? 'top' : 'bottom', 'aria-label':
+    kind === 'confidence' ? 'Mean confidence versus mean count accuracy. Both axes range from 0 to 100 percent; accuracy increases upward.'
+      : `${kind === 'cost' ? 'Cost' : 'Coverage'} versus mean counting error. Zero error is at the ${kind === 'cost' ? 'top; error increases downward' : 'bottom; error increases upward'}.` });
   container.append(svg);
-  svg.append(svgNode('text', { x: left, y: 23, class: 'axis-title' }, 'Mean counting error (%)'));
-  svg.append(svgNode('text', { x: left, y: 43, class: 'guide' }, '↓ LOWER IS BETTER'));
+  svg.append(svgNode('text', { x: left, y: 23, class: 'axis-title' }, kind === 'confidence' ? 'Mean count accuracy (%)' : 'Mean counting error (%)'));
+  svg.append(svgNode('text', { x: left, y: 43, class: 'guide' }, kind === 'confidence' ? '↑ HIGHER IS BETTER' : kind === 'cost' ? '↑ LOWER IS BETTER' : '↓ LOWER IS BETTER'));
   for (let i = 0; i <= 4; i++) {
-    const value = maxError * i / 4, py = y(value);
+    const value = maxY * i / 4, py = y(value);
     svg.append(svgNode('line', { x1: left, y1: py, x2: width - right, y2: py, class: 'grid' }));
     svg.append(svgNode('text', { x: left - 9, y: py + 4, 'text-anchor': 'end', class: 'axis-text' }, value % 1 ? value.toFixed(1) : String(value)));
   }
@@ -224,6 +228,14 @@ function plot(target, configs, kind) {
     : kind === 'confidence' ? 'Mean confidence (%)' : 'Coverage (%)';
   svg.append(svgNode('text', { x: left + pw / 2, y: height - 12, 'text-anchor': 'middle', class: 'axis-title' },
     width < 500 && kind === 'cost' ? 'Same-image cost, USD →' : xTitle));
+  if (kind === 'confidence') {
+    const diagonal = svgNode('line', { x1: x(0), y1: y(0), x2: x(100), y2: y(100),
+      stroke: 'var(--muted)', 'stroke-width': 1.5, 'stroke-dasharray': '6 5', class: 'reference-diagonal' });
+    diagonal.append(svgNode('title', {}, 'y = x: mean confidence matches mean count accuracy'));
+    svg.append(diagonal);
+    svg.append(svgNode('text', { x: left + 10, y: top + ph * .4, class: 'axis-text' }, 'Underconfident'));
+    svg.append(svgNode('text', { x: width - right - 10, y: height - bottom - 14, 'text-anchor': 'end', class: 'axis-text' }, 'Overconfident'));
+  }
   const dash = effort => effort === 'medium' ? '7 4' : effort === 'high' ? '2 4' : '';
   if (kind === 'cost' || kind === 'confidence') {
     for (const model of new Set(points.map(p => p.model))) {
@@ -231,7 +243,7 @@ function plot(target, configs, kind) {
       for (let i = 0; i < EFFORTS.length - 1; i++) {
         const a = points.find(p => p.model === model && p.effort === EFFORTS[i]);
         const b = points.find(p => p.model === model && p.effort === EFFORTS[i + 1]);
-        if (a && b) svg.append(svgNode('path', { d: `M ${x(kind === 'cost' ? a.totalCost : a.confidence * 100)} ${y(a.deviation)} L ${x(kind === 'cost' ? b.totalCost : b.confidence * 100)} ${y(b.deviation)}`,
+        if (a && b) svg.append(svgNode('path', { d: `M ${x(kind === 'cost' ? a.totalCost : a.confidence * 100)} ${y(vertical(a))} L ${x(kind === 'cost' ? b.totalCost : b.confidence * 100)} ${y(vertical(b))}`,
           stroke: colorOf(model), class: 'series-line', 'data-model': model }));
       }
     }
@@ -244,14 +256,15 @@ function plot(target, configs, kind) {
     }
   }
   for (const p of points) {
-    const px = x(kind === 'cost' ? p.totalCost : kind === 'confidence' ? p.confidence * 100 : p.coverage), py = y(p.deviation);
+    const px = x(kind === 'cost' ? p.totalCost : kind === 'confidence' ? p.confidence * 100 : p.coverage), py = y(vertical(p));
     let detail;
     if (kind === 'cost') detail = `${p.name}, ${titleEffort(p.effort)}: ${usd(p.totalCost)} for ${p.n} images; mean deviation ${pct(p.deviation)}; ${p.isDL ? `${p.data.gpu}; ${p.totalInferenceSeconds.toFixed(6)}s inference; ${usd(p.effectiveHourlyRate)}/h (${state.rateSource}); ${usd(p.costPerImage)}/image; ${usd(p.costPer1000Images)}/1,000 images (compute estimate).` : `${cap(p.data.max_tokens)}-token cap.`}`;
-    if (kind === 'confidence') detail = `${p.name}, ${titleEffort(p.effort)}: mean confidence ${pct(p.confidence * 100, 1)}; mean error ${pct(p.deviation)} across all ${p.imageCount} images.`;
+    if (kind === 'confidence') detail = `${p.name}, ${titleEffort(p.effort)}: mean confidence ${pct(p.confidence * 100, 1)}; mean count accuracy ${pct(p.accuracy)} across all ${p.imageCount} images. ${p.confidence * 100 > p.accuracy ? 'Below the diagonal: overconfident' : p.confidence * 100 < p.accuracy ? 'Above the diagonal: underconfident' : 'On the diagonal: confidence matches count accuracy'}.`;
     if (kind === 'coverage') detail = `${nameOf(p.model)}, ${titleEffort(p.effort)}: keep ${p.accepted}/${p.denominator} answers (${pct(p.coverage, 1)} coverage), confidence at least ${pct(p.confidence * 100, 1)}; mean deviation ${pct(p.deviation)}. Images: ${p.images.join(', ')}.`;
     const size = 7;
     const attrs = { fill: colorOf(p.model), class: `mark ${kind}-point`, tabindex: '0', role: 'button', 'aria-label': detail,
       'data-model': p.model, 'data-effort': p.effort, 'data-deviation': p.deviation,
+      'data-accuracy': p.accuracy ?? '', 'data-y': vertical(p),
       'data-image-count': kind === 'confidence' ? p.imageCount : '',
       'data-x': kind === 'cost' ? p.totalCost : kind === 'confidence' ? p.confidence * 100 : p.coverage };
     let mark;
@@ -270,8 +283,8 @@ function plot(target, configs, kind) {
     if (kind === 'cost' && p.isDL) {
       const index = points.filter(point => point.isDL).indexOf(p);
       const labelX = Math.max(4, Math.min(px + 12, width - p.name.length * 8 - 4));
-      const labelY = Math.max(top + 16, py - 18 - index * 20);
-      svg.append(svgNode('line', { x1: px, y1: py - size, x2: labelX, y2: labelY + 3,
+      const labelY = Math.min(height - bottom - 8, py + 22 + index * 20);
+      svg.append(svgNode('line', { x1: px, y1: py + size, x2: labelX, y2: labelY - 12,
         stroke: colorOf(p.model), 'stroke-width': 1, 'aria-hidden': 'true' }));
       svg.append(svgNode('text', { x: labelX, y: labelY, class: 'point-label',
         'data-label-model': p.model }, p.name));
@@ -299,13 +312,13 @@ function renderReadings(configs) {
   const better = pairs.filter(p => p.errorReduction > 1e-9).length;
   $('#cost-caption').textContent = `Each point covers the same ${data.images.length} images. Incomplete results and unknown costs are excluded. ${state.scale === 'log' ? 'Log spacing compares cost ratios; zero-cost points are omitted.' : 'Linear spacing compares dollar differences.'}`;
   $('#cost-reading').textContent = pairs.length
-    ? `${better} of ${pairs.length} models have lower mean error at High than Low. Moving down is an improvement; moving up and right means paying more for higher error.`
+    ? `${better} of ${pairs.length} models have lower mean error at High than Low. Moving up is an improvement; moving down and right means paying more for higher error. Top-left is best: cheap and low error.`
     : 'Select low and high for a model with complete, matching configurations to compare the extra cost with the change in counting error.';
   const accepted = acceptance(configs, state.cutoff / 100);
   const summaries = configs.map(confidenceSummary).filter(Boolean);
   const confident = [...summaries].sort((a, b) => b.confidence - a.confidence)[0];
   $('#confidence-reading').textContent = confident
-    ? `Highest mean confidence: ${confident.name} (${titleEffort(confident.effort)}), ${pct(confident.confidence * 100, 1)}, with ${pct(confident.deviation)} mean error. Higher confidence does not guarantee lower error.`
+    ? `Highest mean confidence: ${confident.name} (${titleEffort(confident.effort)}), ${pct(confident.confidence * 100, 1)}, with ${pct(confident.accuracy)} mean count accuracy. On the diagonal these means match; below it is overconfident, above it is underconfident on this counting metric.`
     : 'A summary point needs a valid count and confidence for every image. No selected configuration has that full coverage.';
   $('#cutoff-reading').textContent = accepted.accepted
     ? `Keep ${accepted.accepted}/${accepted.denominator} possible answers (${pct(accepted.coverage, 1)} coverage). Mean deviation: ${pct(accepted.deviation)}, compared with ${pct(accepted.baseline)} across all confidence-bearing answers in this selection.`
@@ -332,7 +345,7 @@ function renderQuestions(configs) {
     ['Do the most confident answers have smaller errors?', accepted.accepted ? `At your ${state.cutoff}% cutoff, accepted answers have ${pct(accepted.deviation)} mean deviation; all valid, confidence-bearing answers have ${pct(accepted.baseline)}. ${accepted.deviation < accepted.baseline ? 'Selection improves the observed average in this view.' : accepted.deviation > accepted.baseline ? 'Selection worsens the observed average in this view.' : 'The observed average is unchanged.'} Inspect individual curves before using a pooled result.` : 'No answers meet your selected cutoff, so their mean error cannot be calculated. Lower the cutoff to compare accepted and unfiltered answers.'],
     ['How much coverage do I give up?', accepted.denominator ? `Your ${state.cutoff}% cutoff keeps ${accepted.accepted} of ${accepted.denominator} possible LLM answers (${pct(accepted.coverage, 1)}). The denominator includes missing or failed LLM answers. The same images repeat across LLM configurations; DL models are excluded.` : 'No LLM confidence data is selected. DL models do not report P(exact count), so confidence-based coverage is unavailable.'],
     ['Why is a close answer treated as useful?', 'Deviation measures distance from the supplied count. For example, a prediction of 98 against a supplied count of 100 has 2% deviation. An exact-match metric would give it no credit, but these charts represent it as a close count. Each image receives equal weight.'],
-    ['What does a confidence point represent?', 'One model at one reasoning level, averaged across all images. The horizontal position is its mean stated confidence; the vertical position is its mean absolute percentage count deviation. Both means use the same full image set. This does not establish formal probability calibration: confidence means P(exact count), while numerical error measures closeness.'],
+    ['What does a confidence point represent?', 'One LLM at one reasoning level, averaged across all six images. X is mean confidence and Y is mean count accuracy, both 0–100%. Per-image accuracy = min(predicted, supplied count) ÷ max(predicted, supplied count) × 100; both zero gives 100%, only one zero gives 0%. Average the per-image scores, not the counts. On the diagonal the two means match; bottom-right is overconfident and top-left is underconfident. This describes alignment with count closeness, not formal probability calibration of P(exact count).'],
     ['Why might a point or a model be missing?', !configs.length ? 'No reasoning configurations are selected. Enable at least one level to see its results.' : partial.length ? partial.map(c => `${c.name}, ${c.effort}: ${c.successful}/${c.n} valid answers; ${c.failed} failed, ${c.skipped} skipped, ${c.missing} missing; ${c.unknownCosts} unknown charges.`).join(' ') + ' Partial means are not compared against complete runs. Confidence points also require valid confidence for every image.' : `All ${configs.length} selected configurations have complete answers and known charges. A confidence point also requires valid confidence for every image. Missing runs and smoke tests are excluded; partial runs remain in the detailed table.`],
     ['Did only reasoning effort change?', configs.every(c => c.isDL) && configs.length ? 'DL entries are one Colab GPU configuration per model, not a reasoning-level sweep. The Colab script reuses the pinned counting configurations; its compact export does not independently document every configuration field.' : `The page checks recorded prompts, sampling, token caps, provider pins, tools, fallbacks and timeouts within each LLM. Lines and reasoning comparisons are withheld if those settings differ across efforts. The selected LLM token caps are ${[...new Set(configs.filter(c => !c.isDL).map(c => cap(c.data.max_tokens)))].join(' / ') || 'unavailable'}. Cross-model differences cannot be attributed to effort alone.`],
     ['Did these DL models run entirely on the GPU?', 'All three Colab models use CUDA for their neural-network forward passes. Image loading, initial transforms, text tokenization and saving results also use the CPU. The benchmark does not measure GPU utilization or imply 100% utilization. Saved timing covers synchronized inference, not the full pipeline.'],
@@ -401,7 +414,7 @@ function renderDLEstimates(configs) {
 function render() {
   renderPricing();
   $('#cost-detail').textContent = 'Hover, tap or keyboard-focus a point for its cost and counting deviation.';
-  $('#confidence-detail').textContent = 'Select a model-level point to see its mean confidence and mean error.';
+  $('#confidence-detail').textContent = 'Select a model-level point to see its mean confidence and mean count accuracy.';
   $('#coverage-detail').textContent = 'Select a curve point to see its confidence cutoff, accepted images and mean error.';
   const configs = selected();
   const onlyDL = configs.length && configs.every(c => c.isDL);
