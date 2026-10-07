@@ -1,18 +1,18 @@
 // Saved JSON and isolated Chrome only: no model requests and no result-file writes.
 import assert from 'node:assert/strict';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
-import { prepareData, acceptance, confidenceSummary } from '../reasoning-data.mjs';
+import { prepareData, acceptance, confidenceSummary, isResultPath } from '../reasoning-data.mjs';
 const base = process.env.REASONING_URL ?? 'http://127.0.0.1:8765/reasoning.html';
 const cdp = process.env.REASONING_CDP ?? 'http://127.0.0.1:9222';
 const root = new URL('../', import.meta.url);
 const metadata = JSON.parse(await readFile(new URL('eval2/metadata.json', root)));
-const paths = (await readdir(new URL('eval4/', root))).filter(p => p.endsWith('_group1.json')).sort().map(p => `eval4/${p}`);
+const paths = (await readdir(new URL('eval4/', root))).map(p => `eval4/${p}`).filter(isResultPath).sort();
 const sources = await Promise.all(paths.map(async path => ({ path, data: JSON.parse(await readFile(new URL(path, root))) })));
 const expected = prepareData(sources, metadata);
 const target = await (await fetch(`${cdp}/json/new?about:blank`, { method: 'PUT' })).json();
 const socket = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
-let id = 0, override = null; const pending = new Map(), errors = [];
+let id = 0, override = null, colab = null; const pending = new Map(), errors = [];
 const command = (method, params = {}) => new Promise((resolve, reject) => {
   const key = ++id; pending.set(key, { resolve, reject }); socket.send(JSON.stringify({ id: key, method, params }));
 });
@@ -27,8 +27,9 @@ socket.onmessage = async event => {
         await command('Fetch.fulfillRequest', { requestId, responseCode: 404, body: '' });
         return;
       }
-      const response = request.url.endsWith('/reasoning-sources.json') ? { files: paths }
-        : override && request.url.endsWith(`/${override.path}`) ? override.data : null;
+      const response = request.url.endsWith('/reasoning-sources.json') ? { files: colab ? [...paths.filter(p => p !== 'eval4/colab-dl.json'), 'eval4/colab-dl.json'] : paths }
+        : colab && request.url.endsWith('/eval4/colab-dl.json') ? colab
+          : override && request.url.endsWith(`/${override.path}`) ? override.data : null;
       if (response) await command('Fetch.fulfillRequest', { requestId, responseCode: 200,
         responseHeaders: [{ name: 'Content-Type', value: 'application/json' }], body: Buffer.from(JSON.stringify(response)).toString('base64') });
       else await command('Fetch.continueRequest', { requestId });
@@ -86,7 +87,7 @@ try {
     JSON.stringify({ label, observed: await evaluate(`document.querySelector('#cost-detail').textContent`) }));
   for (const model of expected.models) {
     await choose(model);
-    assert.deepEqual(await evaluate(`[...new Set([...document.querySelectorAll('.confidence-point')].map(p=>p.dataset.model))]`), [model]);
+    assert.deepEqual(await evaluate(`[...new Set([...document.querySelectorAll('.confidence-point')].map(p=>p.dataset.model))]`), summaries.some(c => c.model === model) ? [model] : []);
     assert.equal(await evaluate(`document.querySelectorAll('#records-body tr').length`), expected.configs.filter(c => c.model === model).length);
   }
   await evaluate(`const high=document.querySelector('input[name=effort][value=high]');high.checked=false;high.dispatchEvent(new Event('change'));document.querySelector('#cost-scale').value='log';document.querySelector('#cost-scale').dispatchEvent(new Event('change'))`);
@@ -126,7 +127,7 @@ try {
   await command('Page.navigate', { url: base }); await ready();
   assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), expected.configs.filter(c => c.costEligible).length);
   // Change one fetched JSON without editing disk: prove the page recomputes its values.
-  const original = sources.find(s => s.data.reasoning.effort === 'low');
+  const original = sources.find(s => s.data.reasoning?.effort === 'low');
   override = structuredClone(original); override.data.results[0].model_count += 100;
   await command('Fetch.enable', { patterns: [{ urlPattern: '*reasoning-sources.json' }, { urlPattern: '*eval4/' }, { urlPattern: `*${original.path}` }] });
   await evaluate(`document.querySelector('#refresh').click()`); await ready();
@@ -142,7 +143,41 @@ try {
   override.data.results[0].confidence = null;
   await evaluate(`document.querySelector('#refresh').click()`); await ready();
   assert.equal(await evaluate(`document.querySelectorAll('.confidence-point').length`), summaries.length - 1);
-  override = null; await command('Fetch.disable');
+  override = null;
+  // Synthetic Colab records stay in memory; no invented benchmark file is saved.
+  colab = { provider: 'Google Colab', gpu: 'Test GPU (fixture)', hourly_cost_usd: null,
+    models: ['CountGD', 'CountGD++', 'CounTX', 'YOLO-World-S'].map(model => ({ model,
+      images: metadata.map((r, i) => ({ image: r.image, predicted_count: 100.375 + i, inference_seconds: .125 + i / 10 })) })) };
+  await command('Fetch.enable', { patterns: [{ urlPattern: '*reasoning-sources.json' }, { urlPattern: '*eval4/colab-dl.json' }] });
+  await command('Page.navigate', { url: base }); await ready();
+  const llmSources = sources.filter(s => s.data.provider !== 'Google Colab');
+  const combined = prepareData([...llmSources, { path: 'eval4/colab-dl.json', data: colab }], metadata);
+  const llmPoints = combined.configs.filter(c => !c.isDL && c.costEligible).length;
+  assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), llmPoints, 'Absent hourly rate cannot create zero-cost DL points');
+  assert.equal(await evaluate(`document.querySelector('#quality').hidden`), false);
+  assert.equal(await evaluate(`document.querySelectorAll('.quality-row').length`), combined.configs.filter(c => c.complete).length);
+  const llmConfidence = combined.configs.map(confidenceSummary).filter(Boolean).length;
+  assert.equal(await evaluate(`document.querySelectorAll('.confidence-point').length`), llmConfidence);
+  colab.hourly_cost_usd = .75; // Test arithmetic only, never a suggested cloud price.
+  await evaluate(`document.querySelector('#refresh').click()`); await ready();
+  assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), llmPoints + 4);
+  await choose('CountGD');
+  assert.equal(await evaluate(`document.querySelectorAll('.cost-point').length`), 1);
+  assert.equal(await evaluate(`document.querySelectorAll('.confidence-point').length`), 0);
+  assert.equal(await evaluate(`document.querySelector('#confidence').hidden`), true);
+  assert.equal(await evaluate(`document.querySelectorAll('.quality-row').length`), 1);
+  for (const width of [1440, 320]) {
+    await command('Emulation.setDeviceMetricsOverride', { width, height: 1050, deviceScaleFactor: 1, mobile: width < 650 });
+    await evaluate(`document.querySelector('#quality').open=true;document.querySelector('#records').open=true`);
+    await new Promise(resolve => setTimeout(resolve, 200));
+    assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`), true, `DL overflow at ${width}`);
+    const screenshot = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
+    await writeFile(`/tmp/count-colab-import-${width}.png`, Buffer.from(screenshot.data, 'base64'));
+  }
+  await choose('all');
+  assert.equal(await evaluate(`document.querySelector('#confidence').hidden`), false);
+  assert.equal(await evaluate(`document.querySelectorAll('.confidence-point').length`), llmConfidence);
+  colab = null; await command('Fetch.disable');
   await command('Network.setBlockedURLs', { urls: ['*/eval4/*_group1.json*'] });
   await command('Page.navigate', { url: base });
   for (let i = 0; i < 150; i++) {

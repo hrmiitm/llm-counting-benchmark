@@ -56,6 +56,95 @@ for GPU execution. CPU uses the upstream mathematical PyTorch implementation.
 
 ## Results and reproducibility
 
+### Minimal Colab CUDA export
+
+Upload the standalone root `colab_dl_benchmark.py` file to a Colab GPU runtime.
+It checks out benchmark commit `a3cc30aabcfc999a5f6207ac1b6993ddf7f12f15`,
+reuses its original loaders/predictors/configs and the six curated images,
+and runs CountGD, CountGD++, CounTX and YOLO-World-S sequentially. FamNet is
+not installed or benchmarked. Conflicting package versions are isolated.
+The committed package versions are retained with CUDA PyTorch variants:
+2.2.1/cu121 for GD/CounTX and 2.8.0/cu126 for YOLO. The GD extension is built
+with NVIDIA's CUDA 12.1 compiler and GCC 11. Two untimed target-image warm-ups
+precede each model's six measurements. Existing forward-timing scopes are
+preserved, with CUDA synchronization; startup, warm-up, disk artifacts and
+other work outside those scopes are not priced as inference.
+
+Colab cells (first choose **Runtime → Change runtime type → GPU**):
+after committing/pushing the new script and adapter to GitHub, clone and run:
+
+```python
+!git clone https://github.com/hrmiitm/llm-counting-benchmark.git /content/llm-counting-benchmark
+%cd /content/llm-counting-benchmark
+!python colab_dl_benchmark.py --output /content/colab_dl_results.json
+```
+
+```python
+import json
+from google.colab import files
+with open("/content/colab_dl_results.json") as handle:
+    result = json.load(handle)
+assert {m["model"] for m in result["models"]} == {"CountGD", "CountGD++", "CounTX", "YOLO-World-S"}
+assert all(len(m["images"]) == 6 for m in result["models"])
+files.download("/content/colab_dl_results.json")
+```
+
+In an already-cloned checkout, use `!git pull --ff-only` instead of cloning
+again. If the new script has not yet been pushed, upload it directly as follows:
+
+```python
+from google.colab import files
+files.upload()  # Select colab_dl_benchmark.py only.
+```
+
+```python
+!python colab_dl_benchmark.py
+# Only if you explicitly know the rate:
+# !python colab_dl_benchmark.py --hourly-cost-usd YOUR_RATE
+```
+
+```python
+files.download("colab_dl_results.json")
+```
+
+For notebook imports, `from colab_dl_benchmark import main; main([])` also
+works. `--model` is repeatable to install/run a subset. The compact export
+contains only provider, actual GPU name, nullable hourly rate, model names,
+image filenames, unrounded predictions and inference seconds. Installation
+locks/assets/setup provenance remain in the disposable Colab workspace,
+not in the analysis export. A failed model raises an error; completed models
+remain saved, and no failed prediction becomes zero. The pinned older Torch
+build requires a compatible GPU such as T4/L4/A100; Blackwell fails explicitly.
+Use `--output NEW_FILENAME.json` for another run; existing exports are not overwritten.
+
+Enter a rate with the flag above or edit the top-level `hourly_cost_usd` in
+the exported JSON before importing. No price is assumed or looked up.
+After downloading the file, run from this repository's root:
+
+```bash
+node scripts/import-colab-dl.mjs colab_dl_results.json
+```
+
+The command validates each model's exact six-image set, prints per-image
+deviation and model summaries, and copies the raw file unchanged to
+`eval4/colab-dl.json`. Scoring uses `eval2/metadata.json`; mean deviation
+weights images equally and does not round density predictions.
+Compute estimate = total inference seconds / 3600 * supplied hourly rate.
+Cost/image = estimate / 6; cost/1,000 = cost/image * 1,000. All costs remain
+null without a supplied rate. Page 4 discovers the new source automatically
+and includes priced DL points in cost/error, plus an optional mean-deviation
+quality comparison even without a rate. DL models have no reasoning levels
+or count confidence and remain excluded from confidence/coverage summaries.
+The original CPU results and LLM data are unchanged. Publish the imported
+JSON through the existing Pages workflow to update the public graphs.
+
+Offline checks (no CUDA/model/API calls):
+
+```bash
+python3 -m unittest discover -s scripts -p test_colab_dl.py
+node scripts/colab-dl-data-test.mjs
+```
+
 All five result envelopes are written to **`DL-MODELS/results/`**, one JSON per
 model. The website's `eval2/` data and original LLM pilot are not changed.
 

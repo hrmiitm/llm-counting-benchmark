@@ -93,6 +93,10 @@ figcaption { color: var(--muted); font-size: 14px; line-height: 1.65; max-width:
 .advanced { padding: 14px 0; }
 .advanced > summary { font-size: 16px; font-weight: 650; min-height: 44px; padding: 10px 0; cursor: pointer; color: var(--accent); }
 .advanced[open] > summary { margin-bottom: 20px; }
+.quality-row { display: grid; grid-template-columns: minmax(180px, 280px) 1fr 75px; align-items: center; gap: 16px; padding: 10px 0; font-size: 14px; }
+.quality-track { height: 14px; background: var(--track); }
+.quality-track span { display: block; height: 100%; }
+.quality-row strong { text-align: right; }
 .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; background: var(--surface); }
 th, td { text-align: right; padding: 13px 15px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
@@ -112,6 +116,8 @@ footer { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wr
   .direction-pill { display: none; }
 }
 @media (max-width: 600px) {
+  .quality-row { grid-template-columns: 1fr 75px; gap: 5px 12px; }
+  .quality-row > span { grid-column: 1 / -1; }
   main { padding: 24px 16px; }
   .hero { display: block; padding-top: 10px; }
   .dek { font-size: 17px; }
